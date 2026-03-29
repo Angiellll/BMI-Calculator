@@ -17,7 +17,8 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 # 設定 Gemini AI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+# 將原本的 gemini-1.5-flash 改成：
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 # ★ 請填入你的 Google Sheets CSV 發佈網址
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
@@ -139,7 +140,7 @@ def handle_message(event):
                             "color": "#4a90e2",
                             "action": {
                                 "type": "uri",
-                                "label": "🌐 瀏覽開發者網站",
+                                "label": "🌐 瀏覽網站查看詳細內容",
                                 "uri": MY_WEBSITE_URL
                             }
                         }
