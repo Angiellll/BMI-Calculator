@@ -11,18 +11,20 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# 1. 配置金鑰 (從 Render 環境變數讀取)
-line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
+# ==========================================
+# 1. 配置金鑰 (加強連線超時設定)
+# ==========================================
+# 增加 timeout=30，解決截圖中的 ConnectTimeoutError
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'), timeout=30)
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
-# 設定 Gemini AI (從 Render 環境變數讀取)
+# 設定 Gemini AI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-# 選擇最省 Token 且速度最快的 Lite 版本
+# 根據你的 Log 清單，選擇最快且省 Token 的 Lite 版本
 model = genai.GenerativeModel(model_name='models/gemini-flash-lite-latest')
 
-# ★ 請填入你的 Google Sheets CSV 發佈網址
+# ★ 你的設定
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
-# ★ 請填入你的個人網站網址
 MY_WEBSITE_URL = "https://angiellll.github.io/BMI-Calculator/"
 
 @app.route("/callback", methods=['POST'])
@@ -39,6 +41,8 @@ def get_ai_advice(category):
     """從試算表抓取官方資料並透過 Gemini 轉化成親切建議"""
     try:
         df = pd.read_csv(SHEET_CSV_URL)
+        # 確保 Category 欄位沒有空格影響比對
+        df['Category'] = df['Category'].str.strip()
         row = df[df['Category'] == category]
         
         if row.empty:
@@ -53,24 +57,21 @@ def get_ai_advice(category):
         ---
         {official_text}
         ---
-        針對「{category}」寫一段約 80 字的建議。
-        語氣要溫暖、鼓勵人，並在回覆最後加上一句：
-        「想了解更多細節，歡迎參考國健署全文：{ref_link}」
+        針對「{category}」寫一段約 80 字的建議。語氣要溫暖鼓勵。
+        最後加上：「想了解更多細節，歡迎參考國健署全文：{ref_link}」
         """
         
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"AI Error: {e}")
         return "服務稍忙，請稍後再試！或先參考國健署官網資訊。"
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_msg = event.message.text.strip()
 
-    # ==========================================
-    # 1. 圖文選單關鍵字判斷 (5 格)
-    # ==========================================
+    # 圖文選單關鍵字判斷
     menu_keywords = ["飲食建議", "運動方案", "體位標準", "常見迷思破解", "身體活動指引"]
     
     if user_msg in menu_keywords:
@@ -78,24 +79,17 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=ai_reply))
         return
 
-    # ==========================================
-    # 2. BMI 計算邏輯與個人網站 Flex Message
-    # ==========================================
+    # BMI 計算邏輯
     else:
         try:
-            # 判斷是否為範例輸入
-            is_example = (user_msg == "175 70")
-            
-            # 嘗試解析輸入：身高 體重
+            # 解析身高體重
             height, weight = map(float, user_msg.split())
-            
-            # 計算公式
             height_m = height / 100
             bmi = round(weight / (height_m ** 2), 1)
             ideal_weight = round(22 * (height_m ** 2), 1)
             weight_diff = round(weight - ideal_weight, 1)
 
-            # 判定狀態與顏色
+            # 判定狀態
             if bmi < 18.5:
                 status, color = "體重過輕", "#4a90e2"
                 diet, outdoor, home = "多攝取優質蛋白質。", "🏋️ 基礎重訓增肌。", "🏠 伏地挺身、深蹲。"
@@ -148,21 +142,12 @@ def handle_message(event):
                 }
             }
 
-            if is_example:
-                line_bot_api.reply_message(event.reply_token, [
-                    TextSendMessage(text="📊 這是計算範例說明：\n請依照「身高 體重」格式輸入即可！"),
-                    FlexSendMessage(alt_text="您的健康報告", contents=flex_content)
-                ])
-            else:
-                line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="您的健康報告", contents=flex_content))
+            line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="您的健康報告", contents=flex_content))
 
         except Exception:
-            # 幫助提示
-            line_bot_api.reply_message(
-                event.reply_token, 
-                TextSendMessage(text="💡 請輸入正確格式：身高 體重\n例如：175 70\n或點擊選單按鈕獲取指引。")
-            )
-            # 診斷代碼：列出此 API Key 支援的所有模型
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="💡 請輸入正確格式：身高 體重\n例如：175 70\n或點擊選單按鈕獲取指引。"))
+
+# 啟動時診斷模型
 try:
     print("--- 正在列出可用的模型列表 ---")
     for m in genai.list_models():
