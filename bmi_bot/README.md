@@ -44,7 +44,7 @@ bmi_bot/
 LINE_CHANNEL_ACCESS_TOKEN=你的_LINE_Channel_Access_Token
 LINE_CHANNEL_SECRET=你的_LINE_Channel_Secret
 GEMINI_API_KEY=你的_Gemini_API_Key
-PORT=5000
+PORT=5000 //可不用
 ```
 
 ## 🚀 快速開始
@@ -64,7 +64,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. 本地測試（需搭配 ngrok）
+### 3. 本地測試（需搭配 ngrok） //可忽略
 
 ```bash
 python app.py
