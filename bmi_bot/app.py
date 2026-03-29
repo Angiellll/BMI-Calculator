@@ -17,8 +17,8 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 # 設定 Gemini AI (從 Render 環境變數讀取)
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-# 根據你的 Log 清單，這個名稱是一定可以跑的
-model = genai.GenerativeModel(model_name='models/gemini-flash-latest')
+# 選擇最省 Token 且速度最快的 Lite 版本
+model = genai.GenerativeModel(model_name='models/gemini-flash-lite-latest')
 
 # ★ 請填入你的 Google Sheets CSV 發佈網址
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
