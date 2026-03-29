@@ -15,10 +15,10 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
-# 設定 Gemini AI
+# 設定 Gemini AI (從 Render 環境變數讀取)
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # 將原本的 gemini-1.5-flash 改成：
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+model = genai.GenerativeModel(model_name='models/gemini-pro')
 
 # ★ 請填入你的 Google Sheets CSV 發佈網址
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
@@ -162,6 +162,14 @@ def handle_message(event):
                 event.reply_token, 
                 TextSendMessage(text="💡 請輸入正確格式：身高 體重\n例如：175 70\n或點擊選單按鈕獲取指引。")
             )
+            # 診斷代碼：列出此 API Key 支援的所有模型
+try:
+    print("--- 正在列出可用的模型列表 ---")
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            print(f"可用模型名稱: {m.name}")
+except Exception as e:
+    print(f"無法列出模型: {e}")
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
