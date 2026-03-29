@@ -14,13 +14,13 @@ app = Flask(__name__)
 # ==========================================
 # 1. 配置金鑰 (加強連線超時設定)
 # ==========================================
-# 增加 timeout=30，解決截圖中的 ConnectTimeoutError
-line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'), timeout=30)
+# 增加 timeout=60 秒，確保 Gemini 思考時連線不中斷
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'), timeout=60)
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 # 設定 Gemini AI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-# 根據你的 Log 清單，選擇最快且省 Token 的 Lite 版本
+# 根據你的 Log 清單，選擇最省 Token 且速度最快的 Lite 版本
 model = genai.GenerativeModel(model_name='models/gemini-flash-lite-latest')
 
 # ★ 你的設定
@@ -82,14 +82,24 @@ def handle_message(event):
     # BMI 計算邏輯
     else:
         try:
-            # 解析身高體重
-            height, weight = map(float, user_msg.split())
+            # 判斷是否為範例輸入
+            is_example = (user_msg == "175 70")
+            
+            # 嘗試解析輸入：身高 體重
+            parts = user_msg.split()
+            if len(parts) < 2:
+                raise ValueError("格式錯誤")
+                
+            height = float(parts[0])
+            weight = float(parts[1])
+            
+            # 計算公式
             height_m = height / 100
             bmi = round(weight / (height_m ** 2), 1)
             ideal_weight = round(22 * (height_m ** 2), 1)
             weight_diff = round(weight - ideal_weight, 1)
 
-            # 判定狀態
+            # 判定狀態與顏色
             if bmi < 18.5:
                 status, color = "體重過輕", "#4a90e2"
                 diet, outdoor, home = "多攝取優質蛋白質。", "🏋️ 基礎重訓增肌。", "🏠 伏地挺身、深蹲。"
@@ -105,7 +115,7 @@ def handle_message(event):
 
             goal_text = f"理想體重 {ideal_weight}kg。{'尚需減少 ' + str(weight_diff) + 'kg' if weight_diff > 0 else '繼續保持！'}"
 
-            # 建立帶有網站連結按鈕的 Flex Message
+            # 建立 Flex Message
             flex_content = {
                 "type": "bubble",
                 "header": {
@@ -142,10 +152,21 @@ def handle_message(event):
                 }
             }
 
-            line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="您的健康報告", contents=flex_content))
+            # 修正此處的縮進與邏輯
+            if is_example:
+                line_bot_api.reply_message(event.reply_token, [
+                    TextSendMessage(text="📊 這是計算範例說明：\n請依照「身高 體重」格式輸入即可！"),
+                    FlexSendMessage(alt_text="您的健康報告", contents=flex_content)
+                ])
+            else:
+                line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="您的健康報告", contents=flex_content))
 
         except Exception:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="💡 請輸入正確格式：身高 體重\n例如：175 70\n或點擊選單按鈕獲取指引。"))
+            # 幫助提示
+            line_bot_api.reply_message(
+                event.reply_token, 
+                TextSendMessage(text="💡 請輸入正確格式：身高 體重\n例如：175 70\n或點擊選單按鈕獲取指引。")
+            )
 
 # 啟動時診斷模型
 try:
