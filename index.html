@@ -23,24 +23,23 @@
         
         button { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: bold; margin-top: 10px; transition: transform 0.2s, background 0.3s; }
         button:hover { background-color: #357abd; transform: translateY(-2px); }
-        button:active { transform: translateY(0); }
         
         #result-section { margin-top: 2rem; display: none; animation: fadeIn 0.5s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .status-header { text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 10px; margin-bottom: 1rem; }
-        .bmi-number { font-size: 2.5rem; font-weight: 800; display: block; }
+        .status-header { text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 10px; margin-bottom: 1rem; border-top: 4px solid var(--primary-color); }
+        .bmi-number { font-size: 3rem; font-weight: 800; display: block; }
         
-        .advice-card { background: #fff; padding: 1.2rem; margin-top: 1rem; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .card-title { font-weight: bold; display: flex; align-items: center; margin-bottom: 8px; font-size: 1.1rem; }
+        .advice-card { background: #fff; padding: 1.2rem; margin-top: 1rem; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02); position: relative; }
+        .card-title { font-weight: bold; display: flex; align-items: center; margin-bottom: 8px; font-size: 1.1rem; color: #333; }
         
-        /* 不同的邊框顏色區分功能 */
         .diet-card { border-left: 5px solid var(--success-color); }
         .outdoor-card { border-left: 5px solid var(--outdoor-color); }
         .home-card { border-left: 5px solid var(--home-color); }
-        .goal-card { border-left: 5px solid #666; background-color: #fefefe; border-top: 1px dashed #ccc; }
+        .goal-card { border-left: 5px solid #666; background-color: #fefefe; }
 
-        .error-msg { color: var(--danger-color); font-size: 0.9rem; margin-top: 0.5rem; display: none; }
+        .line-link { margin-top: 2rem; padding: 1rem; background: #e8f4fd; border-radius: 10px; text-align: center; border: 1px dashed var(--primary-color); }
+        .history-tag { font-size: 0.8rem; color: #888; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -51,108 +50,113 @@
     <div class="input-group">
         <label for="height">身高 (cm)</label>
         <input type="number" id="height" placeholder="例如: 175" step="0.1">
-        <div id="height-error" class="error-msg">請輸入正確的身高數值</div>
     </div>
 
     <div class="input-group">
         <label for="weight">體重 (kg)</label>
         <input type="number" id="weight" placeholder="例如: 70" step="0.1">
-        <div id="weight-error" class="error-msg">請輸入正確的體重數值</div>
     </div>
 
     <button onclick="calculateBMI()">生成完整健康報告</button>
+    <div id="history-info" class="history-tag"></div>
 
     <div id="result-section">
-        <div class="status-header">
+        <div class="status-header" id="status-box">
             <span class="bmi-number" id="bmi-value">--</span>
             <p>您的健康狀態：<strong id="bmi-status">--</strong></p>
         </div>
         
-        <div id="advice-container">
-            </div>
+        <div id="advice-container"></div>
+
+        <div class="line-link">
+            <p style="margin: 0; font-size: 0.9rem; color: #555;">需要 AI 隨身提醒運動嗎？</p>
+            <a href="https://line.me/R/ti/p/@你的ID" style="color: var(--primary-color); font-weight: bold; text-decoration: none;">打開 LINE AI 顧問 ➔</a>
+        </div>
     </div>
 </div>
 
 <script>
+    // --- 核心功能：頁面載入時檢查 URL 參數 ---
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const h = urlParams.get('h');
+        const w = urlParams.get('w');
+
+        // 讀取上次紀錄 (localStorage)
+        const lastBmi = localStorage.getItem('last_bmi');
+        if (lastBmi) {
+            document.getElementById('history-info').innerText = `上次測量結果 BMI: ${lastBmi}`;
+        }
+
+        if (h && w) {
+            document.getElementById('height').value = h;
+            document.getElementById('weight').value = w;
+            calculateBMI(); // 有數據就自動計算
+        }
+    }
+
     function calculateBMI() {
         const heightInput = document.getElementById('height');
         const weightInput = document.getElementById('weight');
         const height = parseFloat(heightInput.value);
         const weight = parseFloat(weightInput.value);
         
-        // 1. 數據驗證
         if (isNaN(height) || height <= 0 || isNaN(weight) || weight <= 0) {
-            alert("💡 提示：請輸入有效的身高與體重數字！");
+            alert("💡 請輸入有效的身高與體重數字！");
             return;
         }
 
-        // 2. 核心計算邏輯
         const heightInMeters = height / 100;
         const bmi = (weight / (heightInMeters ** 2)).toFixed(1);
         const idealWeight = (22 * (heightInMeters ** 2)).toFixed(1);
         const weightDiff = (weight - idealWeight).toFixed(1);
 
-        // 3. 建議數據庫 (包含：飲食、戶外、居家)
-        let info = {
-            status: "", color: "", diet: "", outdoor: "", home: ""
-        };
+        // 儲存到本地紀錄
+        localStorage.setItem('last_bmi', bmi);
+
+        let info = { status: "", color: "", diet: "", outdoor: "", home: "" };
 
         if (bmi < 18.5) {
-            info.status = "體重過輕"; info.color = "#4a90e2";
+            info.status = "體重過輕"; info.color = "var(--primary-color)";
             info.diet = "多攝取優質蛋白質（如雞腿肉、豆腐、豆漿），並適量增加總熱量攝取。";
-            info.outdoor = "🏋️ 健身房/公園： 進行基礎重訓器材操作，如腿推機、拉背機，有助於增肌。";
-            info.home = " 居家方案： 伏地挺身、自重深蹲（每次 12 下，做 4 組），利用水瓶做側平舉。";
+            info.outdoor = "🏋️ 建議加強肌肉量。前往健身房進行基礎重訓，如腿推機、拉背機。";
+            info.home = "🏠 居家方案：伏地挺身、自重深蹲（每次 12 下，做 4 組）。";
         } else if (bmi < 24) {
-            info.status = "正常範圍"; info.color = "#2ecc71";
-            info.diet = "恭喜維持！請繼續保持原型食物、多喝水，避免過多加工零食。";
-            info.outdoor = " 戶外/河堤： 慢跑、騎自行車或快走 30 分鐘，維持優良心肺功能。";
-            info.home = " 居家方案： 瑜珈伸展、Tabata 高強度間歇運動或跳繩。";
+            info.status = "正常範圍"; info.color = "var(--success-color)";
+            info.diet = "恭喜維持！請繼續保持原型食物、多喝水，避免加工零食。";
+            info.outdoor = "🏃 戶外建議：慢跑、騎自行車或快走 30 分鐘，維持心肺功能。";
+            info.home = "🏠 居家方案：瑜珈伸展、Tabata 高強度間歇運動。";
         } else if (bmi < 27) {
-            info.status = "過重"; info.color = "#f1c40f";
-            info.diet = "減少含糖飲料與宵夜。嘗試 168 斷食法，將碳水化合物比例降低。";
-            info.outdoor = "🚴 公園/河堤： 每週 3 次 40 分鐘的快走或輕快慢跑，增加熱量消耗。";
-            info.home = " 居家方案： 開合跳、波比跳 (Burpees) 每組 20 下，循環 5 組。";
+            info.status = "過重"; info.color = "var(--warning-color)";
+            info.diet = "減少含糖飲料與宵夜。嘗試將碳水化合物比例降低，增加纖維攝取。";
+            info.outdoor = "🚴 建議增加有氧頻率。每週 3 次 40 分鐘的快走或輕快慢跑。";
+            info.home = "🏠 居家方案：開合跳、波比跳 (Burpees) 每組 20 下。";
         } else {
-            info.status = "肥胖"; info.color = "#e74c3c";
-            info.diet = "建議諮詢營養師。嚴格控制油脂與醣類，增加蔬菜纖維，提升飽足感。";
-            info.outdoor = "🏊 泳池/健身房： 游泳、水中行走或使用橢圓機，能燃脂並保護膝關節。";
-            info.home = " 居家方案： 超慢跑 (原地進行) 20 分鐘，或扶著椅子進行深蹲訓練。";
+            info.status = "肥胖"; info.color = "var(--danger-color)";
+            info.diet = "嚴格控制油脂與醣類。建議嘗試蔬菜佔比 50% 的餐盤比例。";
+            info.outdoor = "🏊 建議低衝擊運動。游泳、水中行走或椭圓機，保護膝關節。";
+            info.home = "🏠 居家方案：超慢跑 (原地進行) 20 分鐘。";
         }
 
-        // 4. 更新 UI
+        // 更新介面
         document.getElementById('result-section').style.display = 'block';
         document.getElementById('bmi-value').innerText = bmi;
         document.getElementById('bmi-value').style.color = info.color;
         document.getElementById('bmi-status').innerText = info.status;
-        document.getElementById('bmi-status').style.color = info.color;
+        document.getElementById('status-box').style.borderColor = info.color;
 
-        // 5. 組合目標分析文字
         const goalText = weightDiff > 0 
-            ? `您的理想體重為 <strong>${idealWeight} kg</strong>。<br>（尚需減少 ${weightDiff} kg！加油！努力運動～）`
-            : `您的理想體重為 <strong>${idealWeight} kg</strong>。<br>（目前非常苗條，不要再減肥嘍！多吃點～）`;
+            ? `您的理想體重為 <strong>${idealWeight} kg</strong>。需減少 ${weightDiff} kg。`
+            : `您的理想體重為 <strong>${idealWeight} kg</strong>。目前狀態優良！`;
 
-        // 6. 動態注入卡片內容
         const adviceContainer = document.getElementById('advice-container');
         adviceContainer.innerHTML = `
-            <div class="advice-card goal-card">
-                <div class="card-title">🎯 健康管理目標</div>
-                <p>${goalText}</p>
-            </div>
-            <div class="advice-card diet-card">
-                <div class="card-title">🍎 飲食調整建議</div>
-                <p>${info.diet}</p>
-            </div>
-            <div class="advice-card outdoor-card">
-                <div class="card-title">🌲 戶外與健身房方案</div>
-                <p>${info.outdoor}</p>
-            </div>
-            <div class="advice-card home-card">
-                <div class="card-title">🏠 居家運動方案</div>
-                <p>${info.home}</p>
-            </div>
+            <div class="advice-card goal-card"><div class="card-title">🎯 健康目標</div><p>${goalText}</p></div>
+            <div class="advice-card diet-card"><div class="card-title">🍎 飲食建議</div><p>${info.diet}</p></div>
+            <div class="advice-card outdoor-card"><div class="card-title">🌲 戶外方案</div><p>${info.outdoor}</p></div>
+            <div class="advice-card home-card"><div class="card-title">🏠 居家運動</div><p>${info.home}</p></div>
         `;
 
-        // 自動捲動到結果區塊
         document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
     }
 </script>
