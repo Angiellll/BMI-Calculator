@@ -20,11 +20,12 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 # 設定 Gemini AI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-# 根據你的 Log 清單，選擇最省 Token 且速度最快的 Lite 版本
+# 使用最輕量且支援度高的版本
 model = genai.GenerativeModel(model_name='models/gemini-flash-lite-latest')
 
 # ★ 你的設定
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
+# 網頁版網址
 MY_WEBSITE_URL = "https://angiellll.github.io/BMI-Calculator/"
 
 @app.route("/callback", methods=['POST'])
@@ -41,7 +42,6 @@ def get_ai_advice(category):
     """從試算表抓取官方資料並透過 Gemini 轉化成親切建議"""
     try:
         df = pd.read_csv(SHEET_CSV_URL)
-        # 確保 Category 欄位沒有空格影響比對
         df['Category'] = df['Category'].str.strip()
         row = df[df['Category'] == category]
         
@@ -85,7 +85,7 @@ def handle_message(event):
             # 判斷是否為範例輸入
             is_example = (user_msg == "175 70")
             
-            # 嘗試解析輸入：身高 體重
+            # 解析輸入：身高 體重
             parts = user_msg.split()
             if len(parts) < 2:
                 raise ValueError("格式錯誤")
@@ -114,6 +114,10 @@ def handle_message(event):
                 diet, outdoor, home = "諮詢營養師建議。", "🏊 游泳保護關節。", "🏠 超慢跑訓練。"
 
             goal_text = f"理想體重 {ideal_weight}kg。{'尚需減少 ' + str(weight_diff) + 'kg' if weight_diff > 0 else '繼續保持！'}"
+
+            # --- 關鍵改動：動態組合網頁連結 ---
+            # 將 height 與 weight 傳遞給網頁參數 h 與 w
+            personalized_url = f"{MY_WEBSITE_URL}?h={height}&w={weight}"
 
             # 建立 Flex Message
             flex_content = {
@@ -144,15 +148,14 @@ def handle_message(event):
                             "color": "#4a90e2",
                             "action": {
                                 "type": "uri",
-                                "label": "🌐 瀏覽網站查看詳細內容",
-                                "uri": MY_WEBSITE_URL
+                                "label": "🌐 瀏覽個人化詳細報告",
+                                "uri": personalized_url # 使用動態生成的網址
                             }
                         }
                     ]
                 }
             }
 
-            # 修正此處的縮進與邏輯
             if is_example:
                 line_bot_api.reply_message(event.reply_token, [
                     TextSendMessage(text="📊 這是計算範例說明：\n請依照「身高 體重」格式輸入即可！"),
