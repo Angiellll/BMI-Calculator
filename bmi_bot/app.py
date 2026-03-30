@@ -77,49 +77,49 @@ def handle_message(event):
         personalized_url = f"{MY_WEBSITE_URL}?h={h}&w={w}"
 
         # --- 建立 Flex Message 內容 ---
-            flex_content = {
-                "type": "bubble",
-                "header": {
-                    "type": "box", "layout": "vertical", "contents": [
-                        {"type": "text", "text": "📊 健康報告單", "weight": "bold", "size": "xl", "color": "#333333"},
-                        {"type": "text", "text": str(bmi), "weight": "bold", "size": "5xl", "color": color, "margin": "md"},
-                        {"type": "text", "text": f"狀態：{status}", "size": "md", "color": color, "weight": "bold"}
-                    ], "alignItems": "center", "paddingTop": "20px"
-                },
-                "body": {
-                    "type": "box", "layout": "vertical", "contents": [
-                        {"type": "separator", "margin": "md"},
-                        # 1. 管理目標
-                        {"type": "text", "text": "🎯 管理目標", "weight": "bold", "margin": "lg", "size": "md"},
-                        {"type": "text", "text": goal_text, "size": "sm", "color": "#666666", "wrap": True, "margin": "sm"},
+        flex_content = {
+            "type": "bubble",
+            "header": {
+                "type": "box", "layout": "vertical", "contents": [
+                    {"type": "text", "text": "📊 健康報告單", "weight": "bold", "size": "xl", "color": "#333333"},
+                    {"type": "text", "text": str(bmi), "weight": "bold", "size": "5xl", "color": color, "margin": "md"},
+                    {"type": "text", "text": f"狀態：{status}", "size": "md", "color": color, "weight": "bold"}
+                ], "alignItems": "center", "paddingTop": "20px"
+            },
+            "body": {
+                "type": "box", "layout": "vertical", "contents": [
+                    {"type": "separator", "margin": "md"},
+                    # 1. 管理目標
+                    {"type": "text", "text": "🎯 管理目標", "weight": "bold", "margin": "lg", "size": "md"},
+                    {"type": "text", "text": goal_text, "size": "sm", "color": "#666666", "wrap": True, "margin": "sm"},
                         
-                        # 2. 飲食建議
-                        {"type": "text", "text": "🍎 飲食建議", "weight": "bold", "margin": "lg", "size": "md"},
-                        {"type": "text", "text": diet, "size": "sm", "color": "#666666", "wrap": True, "margin": "sm"},
+                    # 2. 飲食建議
+                    {"type": "text", "text": "🍎 飲食建議", "weight": "bold", "margin": "lg", "size": "md"},
+                    {"type": "text", "text": diet, "size": "sm", "color": "#666666", "wrap": True, "margin": "sm"},
                         
-                        # 3. 運動方案
-                        {"type": "text", "text": "🌲 運動方案", "weight": "bold", "margin": "lg", "size": "md"},
-                        {"type": "box", "layout": "vertical", "margin": "sm", "contents": [
-                            {"type": "text", "text": f"戶外：{outdoor}", "size": "sm", "color": "#666666", "wrap": True},
-                            {"type": "text", "text": f"室內：{home}", "size": "sm", "color": "#666666", "wrap": True, "margin": "xs"}
-                        ]}
-                    ]
-                },
-                "footer": {
-                    "type": "box", "layout": "vertical", "spacing": "sm", "contents": [
-                        {
-                            "type": "button",
-                            "style": "primary",
-                            "color": "#4a90e2",
-                            "action": {
-                                "type": "uri",
-                                "label": "🌐 瀏覽個人化詳細報告",
-                                "uri": personalized_url
-                            }
+                    # 3. 運動方案
+                    {"type": "text", "text": "🌲 運動方案", "weight": "bold", "margin": "lg", "size": "md"},
+                    {"type": "box", "layout": "vertical", "margin": "sm", "contents": [
+                        {"type": "text", "text": f"戶外：{outdoor}", "size": "sm", "color": "#666666", "wrap": True},
+                        {"type": "text", "text": f"室內：{home}", "size": "sm", "color": "#666666", "wrap": True, "margin": "xs"}
+                    ]}
+                ]
+            },
+            "footer": {
+                "type": "box", "layout": "vertical", "spacing": "sm", "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "color": "#4a90e2",
+                        "action": {
+                            "type": "uri",
+                            "label": "🌐 瀏覽個人化詳細報告",
+                            "uri": personalized_url
                         }
-                    ], "paddingAll": "20px"
-                }
+                    }
+                ], "paddingAll": "20px"
             }
+        }
         line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="BMI報告", contents=flex_content))
 
     except:
