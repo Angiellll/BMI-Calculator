@@ -86,12 +86,16 @@ def handle_message(event):
                 ], "alignItems": "center"
             },
             "body": {
-                "type": "box", "layout": "vertical", "contents": [
-                    {"type": "separator", "margin": "md"},
-                    {"type": "text", "text": "🎯 管理目標", "weight": "bold", "margin": "lg"},
-                    {"type": "text", "text": f"理想體重為 {ideal_w}kg", "size": "sm", "color": "#666666"}
-                ]
-            },
+                    "type": "box", "layout": "vertical", "contents": [
+                        {"type": "separator", "margin": "md"},
+                        {"type": "text", "text": "🎯 管理目標", "weight": "bold", "margin": "lg"},
+                        {"type": "text", "text": goal_text, "size": "sm", "color": "#666666", "wrap": True},
+                        {"type": "text", "text": "🍎 飲食建議", "weight": "bold", "margin": "lg"},
+                        {"type": "text", "text": diet, "size": "sm", "color": "#666666", "wrap": True},
+                        {"type": "text", "text": "🌲 運動方案", "weight": "bold", "margin": "lg"},
+                        {"type": "text", "text": f"戶外：{outdoor}\n室內：{home}", "size": "sm", "color": "#666666", "wrap": True}
+                    ]
+                },
             "footer": {
                 "type": "box", "layout": "vertical", "contents": [
                     {
