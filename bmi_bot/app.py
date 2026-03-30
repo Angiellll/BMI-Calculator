@@ -17,7 +17,7 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 # 設定 Gemini AI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
+model = genai.GenerativeModel(model_name='models/gemini-flash-lite-latest')
 
 # 設定與路徑
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
