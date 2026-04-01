@@ -26,6 +26,9 @@ model = genai.GenerativeModel(model_name='gemini-flash-lite-latest')
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
 MY_WEBSITE_URL = "https://angiellll.github.io/BMI-Calculator/"
 
+# [新增] 模擬資料庫：紀錄每個 user_id 的完成天數 (若程式重啟會歸零)
+user_progress = {}
+
 @app.route("/callback", methods=['POST'])
 def callback():
     signature = request.headers['x-line-signature']
@@ -63,7 +66,28 @@ def get_ai_advice(category):
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    user_id = event.source.user_id
     user_msg = event.message.text.strip()
+
+    # [新增] 處理「查詢進度」邏輯
+    if user_msg == "查詢進度":
+        current_day = user_progress.get(user_id, 0)
+        if current_day == 0:
+            reply = "你還沒有開始 30 天挑戰喔！\n快點擊健康報告中的按鈕或完成任務來開始第一天吧！"
+        else:
+            reply = f"📊 您的個人化挑戰進度：\n目前已持續實踐：{current_day} 天\n距離 30 天目標還剩：{30 - current_day} 天\n\n維持初衷，讓我們一起變得更健康！💪"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply))
+        return
+
+    # [新增] 處理「我已完成實踐」邏輯 (對應網頁按鈕觸發的訊息)
+    if user_msg == "我已完成實踐":
+        user_progress[user_id] = user_progress.get(user_id, 0) + 1
+        day = user_progress[user_id]
+        line_bot_api.reply_message(
+            event.reply_token, 
+            TextSendMessage(text=f"✅ 紀錄成功！恭喜您完成第 {day} 天的實踐。明天也要繼續堅持喔！✨")
+        )
+        return
 
     # 1. 處理圖文選單/關鍵字查詢
     menu_keywords = ["飲食建議", "運動方案", "體位標準", "常見迷思破解", "身體活動指引"]
@@ -118,7 +142,6 @@ def handle_message(event):
             goal_text = "恭喜！您正處於完美的理想體重。"
 
         # 生成網頁連結 (對接你修改後的 HTML)
-        # 確保格式為 .../index.html?h=175&w=70
         sep = "&" if "?" in MY_WEBSITE_URL else "?"
         personalized_url = f"{MY_WEBSITE_URL}{sep}h={height}&w={weight}"
 
@@ -147,13 +170,21 @@ def handle_message(event):
                 ]
             },
             "footer": {
-                "type": "box", "layout": "vertical", "contents": [
+                "type": "box", "layout": "vertical", "spacing": "sm", "contents": [
                     {
                         "type": "button", "style": "primary", "color": color,
                         "action": {
                             "type": "uri", 
-                            "label": "查看圖表與詳細方案", 
+                            "label": "🌐 瀏覽個人化詳細報告", 
                             "uri": personalized_url
+                        }
+                    },
+                    {
+                        "type": "button", "style": "secondary", "margin": "md",
+                        "action": {
+                            "type": "message", 
+                            "label": "📈 查詢計畫進度", 
+                            "text": "查詢進度"
                         }
                     }
                 ], "paddingAll": "20px"
@@ -164,13 +195,11 @@ def handle_message(event):
 
     except Exception as e:
         print(f"Main Error: {e}")
-        # 如果使用者輸入非數字或亂碼，回傳教學
         line_bot_api.reply_message(
             event.reply_token, 
             TextSendMessage(text="💡 想要計算 BMI 嗎？\n請直接輸入「身高 體重」\n例如：175 70")
         )
 
 if __name__ == "__main__":
-    # 支援 Render / Heroku 部署
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
