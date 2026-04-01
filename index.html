@@ -137,8 +137,11 @@
         </div>
     </div>
     <div class="input-group">
-        <label for="targetWeight">目標體重 (kg) <span style="font-weight: normal; font-size: 0.8rem; color: var(--target-color);">*設定後開啟進度追蹤</span></label>
-        <input type="number" id="targetWeight" placeholder="例如: 65" step="0.1">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="enableTarget" onchange="toggleTargetInput()" style="width: auto;"> 
+            設定目標體重 <span style="font-weight: normal; font-size: 0.8rem; color: var(--target-color);">(開啟進度追蹤)</span>
+        </label>
+        <input type="number" id="targetWeight" placeholder="請先勾選左上方方塊" step="0.1" disabled>
     </div>
 
     <button onclick="calculateBMI()">生成完整健康報告</button>
@@ -248,22 +251,36 @@
     function calculateBMI() {
         const h = parseFloat(document.getElementById('height').value);
         const w = parseFloat(document.getElementById('weight').value);
-        const targetW = parseFloat(document.getElementById('targetWeight').value);
         
-        if (!h || !w) { alert("💡 請輸入有效的身高與體重！"); return; }
+        // 1. 取得勾選狀態與輸入值
+        const isTargetEnabled = document.getElementById('enableTarget') ? document.getElementById('enableTarget').checked : false;
+        const targetWInput = document.getElementById('targetWeight').value;
         
+        // 2. 只有在「有勾選」且「有填數字」的情況下才會有 targetW，否則一律為 null
+        const targetW = (isTargetEnabled && targetWInput !== "") ? parseFloat(targetWInput) : null;
+        
+        // 3. 基本檢查：只要身高或體重沒填，就中斷並提醒
+        if (!h || !w || isNaN(h) || isNaN(w)) { 
+            alert("💡 請輸入有效的身高與體重！"); 
+            return; 
+        }
+        
+        // 4. 計算 BMI 與 理想體重
         const bmi = (w / ((h / 100) ** 2)).toFixed(1);
         const idealWeight = (22 * ((h / 100) ** 2)).toFixed(1);
         const weightDiff = (w - idealWeight).toFixed(1);
         
+        // 儲存紀錄
         saveToHistory(h, w, bmi);
 
+        // 判定狀態顏色
         let info = { status: "", color: "" };
         if (bmi < 18.5) { info.status = "體重過輕"; info.color = "var(--primary-color)"; }
         else if (bmi < 24) { info.status = "正常範圍"; info.color = "var(--success-color)"; }
         else if (bmi < 27) { info.status = "過重"; info.color = "var(--warning-color)"; }
         else { info.status = "肥胖"; info.color = "var(--danger-color)"; }
 
+        // 顯示結果區塊
         document.getElementById('result-section').style.display = 'block';
         document.getElementById('bmi-value').innerText = bmi;
         document.getElementById('bmi-value').style.color = info.color;
@@ -274,21 +291,23 @@
             `理想體重為 <strong>${idealWeight} kg</strong>，需減重 ${weightDiff} kg。` : 
             `理想體重為 <strong>${idealWeight} kg</strong>，狀態良好！`;
 
+        // 5. 目標進度追蹤邏輯 (只有 targetW 存在時才生成 HTML)
         let progressHtml = "";
-        if (targetW) {
+        if (targetW !== null && !isNaN(targetW)) {
             let history = JSON.parse(localStorage.getItem('bmi_history')) || [];
             const startW = history.length > 0 ? history[0].w : w; 
             let percentage = 0;
 
-            if (w === targetW) { percentage = 100; } 
-            else if (startW === targetW) { percentage = 0; } 
-            else {
-                const totalDistance = Math.abs(targetW - startW);
-                const currentRemaining = Math.abs(targetW - w);
-                percentage = currentRemaining >= totalDistance ? 0 : ((totalDistance - currentRemaining) / totalDistance) * 100;
+            const totalDistance = Math.abs(targetW - startW);
+            const currentRemaining = Math.abs(targetW - w);
+            
+            if (totalDistance === 0 || w === targetW) {
+                percentage = 100;
+            } else {
+                percentage = ((totalDistance - currentRemaining) / totalDistance) * 100;
             }
 
-            percentage = parseFloat(percentage).toFixed(1);
+            percentage = Math.max(0, Math.min(100, percentage)).toFixed(1);
             const remaining = Math.abs(w - targetW).toFixed(1);
             const actionType = w > targetW ? "減重" : "增重";
             
@@ -300,12 +319,13 @@
                         <span class="progress-text">${percentage}%</span>
                     </div>
                     <p style="font-size: 0.9rem; color: #666; margin: 0;">
-                        初始起點：<strong>${startW}kg</strong> | 目標：<strong>${targetW}kg</strong><br>
-                        目前狀態：還差 <strong>${remaining}kg</strong> (${actionType})
+                        初始：<strong>${startW}kg</strong> | 目標：<strong>${targetW}kg</strong><br>
+                        目前：還差 <strong>${remaining}kg</strong> (${actionType})
                     </p>
                 </div>`;
         }
 
+        // 6. 渲染畫面
         const adviceContainer = document.getElementById('advice-container');
         adviceContainer.innerHTML = `
             ${progressHtml}
@@ -316,12 +336,7 @@
                         <option value="recent">近 10 次紀錄</option>
                         <option value="month">一個月內</option>
                         <option value="year">一年內</option>
-                        <option value="custom">自訂日期範圍</option>
                     </select>
-                    <div id="customDateRange" class="custom-date-inputs">
-                        <input type="date" id="startDate" onchange="renderChart()">
-                        <input type="date" id="endDate" onchange="renderChart()">
-                    </div>
                 </div>
                 <div class="chart-container"><canvas id="bmiChartCanvas"></canvas></div>
             </div>
@@ -333,21 +348,32 @@
             <div class="advice-card outdoor-card clickable-card" onclick="openOutdoorModal('${info.status}')">
                 <div class="card-title">🌲 戶外方案 <span class="click-hint">選擇場點 ➔</span></div><p>尋找附近的運動場所。</p>
             </div>
-            
             <div class="advice-card home-card">
                 <div class="card-title">🏠 居家運動 <span class="click-hint" style="cursor:pointer" onclick="openHomeModal('${info.status}')">查看計畫 ➔</span></div>
                 <p>宅在家也能有效運動，點擊展開基礎動作。</p>
             </div>
-
             <div class="action-btn-group">
                 <button class="btn-gain pulse-btn" onclick="handleAdvancedPlan('gain', '${info.status}')">🚀 開始增重挑戰</button>
                 <button class="btn-lose" onclick="handleAdvancedPlan('lose', '${info.status}')">🔥 開始燃脂挑戰</button>
             </div>
         `;
-        renderChart(targetW);
+        
+        // 7. 渲染圖表 (確保傳入 targetW，如果為 null 圖表也會正常運作)
+        renderChart(targetW); 
         document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
     }
-
+    function toggleTargetInput() {
+        const isChecked = document.getElementById('enableTarget').checked;
+        const targetInput = document.getElementById('targetWeight');
+        targetInput.disabled = !isChecked;
+        if (!isChecked) {
+            targetInput.value = ""; // 取消勾選時清空數值
+            targetInput.placeholder = "請先勾選左上方方塊";
+        } else {
+            targetInput.placeholder = "例如: 65";
+            targetInput.focus();
+        }
+    }
     // 核心創意邏輯：處理進階計畫
     function handleAdvancedPlan(type, currentStatus) {
         currentPlanType = type;
