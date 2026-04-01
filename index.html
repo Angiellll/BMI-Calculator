@@ -20,8 +20,8 @@
         h1 { text-align: center; color: #333; margin-bottom: 1.5rem; }
         .input-group { margin-bottom: 1.2rem; }
         label { display: block; margin-bottom: 0.5rem; color: #555; font-weight: bold; }
-        input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 1rem; transition: border-color 0.3s; }
-        input:focus { border-color: var(--primary-color); outline: none; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 1rem; transition: border-color 0.3s; }
+        input:focus, select:focus { border-color: var(--primary-color); outline: none; }
         
         button { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: bold; margin-top: 10px; transition: transform 0.2s, background 0.3s; }
         button:hover { background-color: #357abd; transform: translateY(-2px); }
@@ -35,9 +35,13 @@
         .advice-card { background: #fff; padding: 1.2rem; margin-top: 1rem; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02); position: relative; transition: all 0.2s; }
         .card-title { font-weight: bold; display: flex; align-items: center; margin-bottom: 8px; font-size: 1.1rem; color: #333; }
         
-        /* 趨勢圖卡片專屬樣式 */
         .history-card { border-left: 5px solid var(--history-color); }
         .chart-container { width: 100%; height: 220px; margin-top: 10px; }
+
+        .filter-group { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+        .filter-select { flex: 1; min-width: 120px; padding: 5px; font-size: 0.85rem; height: 35px; }
+        .custom-date-inputs { display: none; width: 100%; gap: 5px; margin-top: 5px; }
+        .custom-date-inputs input { flex: 1; padding: 5px; font-size: 0.8rem; height: 30px; }
 
         .clickable-card { cursor: pointer; }
         .clickable-card:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
@@ -57,20 +61,18 @@
 
         .goal-card { border-left: 5px solid #666; background-color: #fefefe; }
 
-        /* Modal 樣式 */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
         .modal-content { background-color: white; margin: 5% auto; padding: 25px; border-radius: 15px; width: 85%; max-width: 480px; position: relative; animation: slideDown 0.3s ease; max-height: 85vh; overflow-y: auto; }
         @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .close-btn { position: absolute; right: 20px; top: 15px; font-size: 28px; color: #aaa; cursor: pointer; }
         
-        /* 歷史明細表格 */
         .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .history-table th, .history-table td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.9rem; }
         .history-table th { background: #f8f9fa; color: #666; }
         .history-table tr:hover { background: #fafafa; }
 
         .option-item { background: #f9f9f9; padding: 15px; border-radius: 10px; margin-top: 12px; border: 1px solid #eee; transition: all 0.2s; display: flex; align-items: center; }
-        #outdoorModal .option-item.clickable:hover { background: white; border-color: var(--outdoor-color); box-shadow: 0 4px 8px rgba(0,0,0,0.1); transform: translateX(5px); cursor: pointer; }
+        .option-item.clickable:hover { background: white; border-color: var(--outdoor-color); box-shadow: 0 4px 8px rgba(0,0,0,0.1); transform: translateX(5px); cursor: pointer; }
         #homeModal .option-item { border-left: 4px solid var(--home-color); flex-direction: column; align-items: flex-start; }
         .icon-box { font-size: 1.5rem; margin-right: 15px; flex-shrink: 0; }
         #homeModal .icon-box { margin-right: 0; margin-bottom: 10px; font-size: 2rem; }
@@ -82,7 +84,10 @@
         .meal-tag { font-weight: bold; color: var(--success-color); display: block; margin-bottom: 4px; }
         .source-link { display: block; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; color: var(--primary-color); text-decoration: none; font-size: 0.9rem; }
         .line-link { margin-top: 2rem; padding: 1rem; background: #e8f4fd; border-radius: 10px; text-align: center; border: 1px dashed var(--primary-color); }
-        .history-tag { font-size: 0.8rem; color: #888; text-align: center; margin-top: 10px; }
+        
+        .plan-btn-group { display: flex; gap: 8px; margin-bottom: 15px; }
+        .plan-btn { flex: 1; padding: 8px; border: 1px solid #ddd; background: #eee; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .plan-btn.active { background: var(--success-color); color: white; border-color: var(--success-color); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -98,7 +103,6 @@
         <input type="number" id="weight" placeholder="例如: 70" step="0.1">
     </div>
     <button onclick="calculateBMI()">生成完整健康報告</button>
-    <div id="history-info" class="history-tag"></div>
     
     <div id="result-section">
         <div class="status-header" id="status-box">
@@ -119,109 +123,64 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('historyModal')">×</span>
         <h3 style="margin-top:0">📊 歷史量測明細</h3>
-        <p style="font-size: 0.85rem; color: #888;">記錄您最近 10 次的量測數據。</p>
         <div id="history-table-box"></div>
     </div>
 </div>
 
-<div id="dietModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('dietModal')">×</span><h3 style="margin-top:0">🍽 推薦菜單：<span id="modal-status-text"></span></h3><div id="meal-details"></div><a id="gov-link" href="#" target="_blank" class="source-link">🔗 查看國健署飲食指南資料</a></div></div>
-<div id="outdoorModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('outdoorModal')">×</span><h3 style="margin-top:0">🌲 選擇適合您的場點</h3><p id="outdoor-intro" style="font-size: 0.9rem; color: #666;"></p><div id="location-options"></div></div></div>
-<div id="homeModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('homeModal')">×</span><h3 style="margin-top:0">🏠 專屬居家運動計畫</h3><p id="home-intro" style="font-size: 0.9rem; color: #666;"></p><div id="home-exercise-options"></div></div></div>
+<div id="dietModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('dietModal')">×</span>
+        <h3 style="margin-top:0">🍽 推薦菜單：<span id="modal-status-text"></span></h3>
+        <div class="plan-btn-group" id="plan-selector"></div>
+        <div id="meal-details"></div>
+        <a id="gov-link" href="#" target="_blank" class="source-link">🔗 查看國健署飲食指南資料</a>
+    </div>
+</div>
+
+<div id="outdoorModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('outdoorModal')">×</span>
+        <h3 style="margin-top:0">🌲 選擇適合您的場點</h3>
+        <p id="outdoor-intro" style="font-size: 0.9rem; color: #666;"></p>
+        <div id="location-options"></div>
+    </div>
+</div>
+
+<div id="homeModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('homeModal')">×</span>
+        <h3 style="margin-top:0">🏠 專屬居家運動計畫</h3>
+        <p id="home-intro" style="font-size: 0.9rem; color: #666;"></p>
+        <div id="home-exercise-options"></div>
+    </div>
+</div>
 
 <script>
-    // --- 數據庫區 ---
+    // --- 資料庫定義 ---
     const dietDatabase = {
-        "體重過輕": { breakfast: "全麥吐司夾蛋 + 起司 + 無糖濃豆漿", lunch: "雞腿排便當 (五穀飯) + 一份時令水果", dinner: "清蒸鮭魚 + 炒青菜 + 豆腐味噌湯", link: "https://www.hpa.gov.tw/Pages/Detail.aspx?nodeid=1622&pid=9415" },
-        "正常範圍": { breakfast: "鮮奶燕麥粥 + 少量堅果 + 蘋果", lunch: "舒肥雞胸沙拉 + 水煮蛋 + 地瓜一顆", dinner: "蒜泥白肉 (去肥) + 三種蔬菜 + 糙米飯", link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=1622" },
-        "過重": { breakfast: "兩顆水煮蛋 + 無糖美式咖啡/拿鐵", lunch: "蕎麥冷麵 + 涼拌豆腐 + 大量燙青菜", dinner: "乾煎里肌肉 (少油) + 溫沙拉 + 沒加糖的茶", link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=116" },
-        "肥胖": { breakfast: "無糖豆漿 + 蒸蛋 + 一份低糖水果 (如芭樂)", lunch: "溫沙拉 (燻雞肉) + 橄欖油醋醬 + 無油蔬菜湯", dinner: "清燉牛肉湯 (去油) + 燙青菜 (不淋滷肉)", link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=222" }
+        "體重過輕": { plans: [{ id: 'A', name: "方案 A: 增肌營養", breakfast: "全麥吐司夾蛋 + 起司 + 無糖濃豆漿", lunch: "雞腿排便當 (五穀飯) + 一份時令水果", dinner: "清蒸鮭魚 + 炒青菜 + 豆腐味噌湯" }, { id: 'B', name: "方案 B: 高能均衡", breakfast: "鮮奶燕麥粥 + 綜合堅果 + 香蕉", lunch: "牛肉湯麵 (多肉) + 燙青菜 + 豆干", dinner: "豬里肌熱炒蔬菜 + 糙米飯" }, { id: 'C', name: "方案 C: 快速補給", breakfast: "鮪魚三明治 + 全脂牛奶", lunch: "超商雞肉飯糰 + 慢煮雞胸肉 + 果汁", dinner: "鍋燒烏龍麵 (加雙蛋) + 涼拌豆腐" }], link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" },
+        "正常範圍": { plans: [{ id: 'A', name: "方案 A: 低糖輕食", breakfast: "鮮奶燕麥粥 + 少量堅果 + 蘋果", lunch: "舒肥雞胸沙拉 + 水煮蛋 + 地瓜一顆", dinner: "蒜泥白肉 (去肥) + 三種蔬菜 + 糙米飯" }, { id: 'B', name: "方案 B: 均衡飽足", breakfast: "饅頭夾蛋 + 無糖豆漿", lunch: "烤鯖魚便當 (少飯多菜) + 奇異果", dinner: "番茄肉醬全麥麵 (少鹽) + 綜合蔬菜湯" }, { id: 'C', name: "方案 C: 健身高蛋白", breakfast: "希臘優格 + 藍莓 + 雞蛋", lunch: "雞肉捲餅 (大量生菜) + 黑咖啡", dinner: "香煎鯛魚片 + 蒸南瓜 + 炒花椰菜" }], link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" },
+        "過重": { plans: [{ id: 'A', name: "方案 A: 減脂優先", breakfast: "兩顆水煮蛋 + 無糖美式咖啡", lunch: "蕎麥冷麵 + 涼拌豆腐 + 大量燙青菜", dinner: "乾煎里肌肉 (少油) + 溫沙拉 + 無糖綠茶" }, { id: 'B', name: "方案 B: 低卡替代", breakfast: "地瓜一小塊 + 無糖豆漿", lunch: "清燉牛肉湯 (去油) + 燙芥蘭菜", dinner: "香菇蒸雞 (去皮) + 水煮青江菜" }, { id: 'C', name: "方案 C: 168 配合", breakfast: "不吃 (或只喝黑咖啡)", lunch: "雞胸肉餐盒 (飯量 1/3) + 蔬菜湯", dinner: "綜合海鮮沙拉 (油醋醬) + 雜糧餅乾" }], link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" },
+        "肥胖": { plans: [{ id: 'A', name: "方案 A: 嚴格控醣", breakfast: "無糖豆漿 + 蒸蛋 + 一份低糖水果", lunch: "溫沙拉 (燻雞肉) + 橄欖油醋醬 + 無油蔬菜湯", dinner: "清燉牛肉湯 (去油) + 燙青菜 (不淋滷肉)" }, { id: 'B', name: "方案 B: 蔬食排毒", breakfast: "大份生菜沙拉 + 堅果 + 水煮蛋", lunch: "綜合蔬菜咖哩 (不加飯) + 煎豆腐", dinner: "烤雞翅 (去皮) + 涼拌小黃瓜 + 海帶芽湯" }, { id: 'C', name: "方案 C: 飽腹替代", breakfast: "燕麥麩皮粥 (無糖) + 奇亞籽", lunch: "麻辣燙 (全蔬菜、豆腐、菇類、不喝湯)", dinner: "水煮蝦仁 + 大量高麗菜 + 荷包蛋" }], link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" }
     };
 
     const outdoorDetails = {
-
         "體重過輕": { intro: "目標是透過重量訓練增加肌肉量，這對增重最有效！", options: [{ title: "大型連鎖健身房", desc: "器材最齊全，適合系統化重訓", icon: "🏋️", keyword: "健身房" }, { title: "國民運動中心", desc: "收費親民，適合新手練習", icon: "💪", keyword: "運動中心" }, { title: "公園健身設施", desc: "利用單槓、撐體進行自重訓練", icon: "🌳", keyword: "公園" }] },
-
         "正常範圍": { intro: "目標是維持體能與心肺健康，多樣化運動是關鍵。", options: [{ title: "附近公園操場", desc: "適合慢跑與快走，空氣清新", icon: "🏃", keyword: "操場" }, { title: "河濱自行車道", desc: "騎單車欣賞風景，放鬆心情", icon: "🚴", keyword: "自行車道" }, { title: "登山步道", desc: "週末踏青，鍛鍊腿部肌力", icon: "⛰️", keyword: "登山步道" }] },
-
         "過重": { intro: "重點在於中強度有氧，持續燃脂並減少體脂。", options: [{ title: "快走步道/公園", desc: "低衝擊有氧，對膝蓋負擔小", icon: "👟", keyword: "步道" }, { title: "國民運動中心", desc: "可使用跑步機或參加飛輪課", icon: "🏢", keyword: "運動中心" }, { title: "學校操場", desc: "定時定量的慢跑計畫", icon: "🏫", keyword: "操場" }] },
-
         "肥胖": { intro: "目標是體重管理，首選「水中運動」以保護膝關節。", options: [{ title: "溫水游泳池", desc: "水中行走或游泳，燃脂率極高", icon: "🏊", keyword: "游泳池" }, { title: "運動中心健身房", desc: "建議使用橢圓機，低衝擊保護關節", icon: "🥨", keyword: "運動中心 橢圓機" }, { title: "平緩步道", desc: "餐後散步 20 分鐘，穩定血糖", icon: "🚶", keyword: "散步 步道" }] }
-
     };
 
-     // 居家運動詳細資料庫
-
     const homeExerciseDatabase = {
-
-        "體重過輕": {
-
-            intro: "利用自重進行基礎肌力訓練，每週 3-4 次，建立身體素質。",
-
-            exercises: [
-
-                { title: "自重深蹲 (Squats)", icon: "🦵", plan: ["組數：4 組。", "次數：每組 12-15 下。", "休息：組間休息 60 秒。", "重點：保持背部挺直，膝蓋不超過腳尖。"] },
-
-                { title: "跪姿/標準伏地挺身", icon: "🙆‍♂️", plan: ["組數：4 組。", "次數：每組 做至力竭前 1-2 下。", "休息：組間休息 90 秒", "重點：核心收緊，身體呈一直線。"] },
-
-                { title: "棒式 (Plank)", icon: "🧱", plan: ["組數：3 組。", "時間：每組 撐 30-60 秒。", "休息：組間休息 45 秒。", "重點：臀部不抬高，不塌腰。"] }
-
-            ]
-
-        },
-
-        "正常範圍": {
-
-            intro: "維持體能，加入高強度間歇運動 (HIIT) 提升心肺。",
-
-            exercises: [
-
-                { title: "Tabata 全身燃脂", icon: "⏱️", plan: ["模式：20秒運動，10秒休息，做8個循環。", "動作：開合跳、高抬腿、波比跳、深蹲跳。", "時間：總共只需 4 分鐘。", "重點：在20秒內盡全力做。"] },
-
-                { title: "流動瑜珈 (Vinyasa)", icon: "🧘‍♀️", plan: ["時間：30-45 分鐘。", "頻率：每週 2-3 次。", "重點：配合呼吸，提升身體柔軟度與核心。"] },
-
-                { title: "弓箭步下蹲 (Lunges)", icon: "🦵", plan: ["組數：3 組。", "次數：每邊腳 12 下。", "休息：組間休息 60 秒。", "重點：前腳膝蓋呈 90 度。"] }
-
-            ]
-
-        },
-
-        "過重": {
-
-            intro: "中等強度循環訓練，有效燃脂，對關節負擔小。",
-
-            exercises: [
-
-                { title: "自重循環訓練", icon: "🔄", plan: ["動作：深蹲 -> 伏地挺身 -> 弓箭步 -> 棒式。", "模式：每個動作做 45 秒，休息 15 秒。", "循環：完成 4 動作為 1 圈，做 3-4 圈。", "重點：保持連續性，中途不長休息。"] },
-
-                { title: "慢速開合跳 (Jumping Jacks)", icon: "👐", plan: ["時間：總共 10-15 分鐘。", "模式：做 2 分鐘，休息 1 分鐘，重複。", "重點：落地時膝蓋保持微彎緩和衝擊。"] },
-
-                { title: "陰瑜珈 (Yin Yoga)", icon: "🧘‍♂️", plan: ["時間：20-30 分鐘。", "重點：專注於拉伸與放鬆，緩解運動後的肌肉緊張。"] }
-
-            ]
-
-        },
-
-        "肥胖": {
-
-            intro: "「超慢跑」與低衝擊運動，首要任務是保護關節，持之以恆。",
-
-            exercises: [
-
-                { title: "原地超慢跑", icon: "🐢", plan: ["時間：20-30 分鐘 (可從 10 分鐘開始累加)。", "頻率：每天或每週 5 次。", "重點：保持輕鬆聊天不喘的節奏，腳掌輕輕落地。"] },
-
-                { title: "椅子深蹲 (Chair Squats)", icon: "🪑", plan: ["組數：3 組。", "次數：每組 10-12 下。", "重點：後面放張椅子，屁股輕點椅子即站起，安全第一。"] },
-
-                { title: "靠牆伏地挺身", icon: "🧱", plan: ["組數：3 組。", "次數：每組 15 下。", "重點：雙手撐牆，身體呈一直線，訓練上肢基礎肌力。"] }
-
-            ]
-
-        }
-
+        "體重過輕": { intro: "利用自重進行基礎肌力訓練，每週 3-4 次。", exercises: [{ title: "自重深蹲", icon: "🦵", plan: ["4 組，每組 12-15 下"] }, { title: "伏地挺身", icon: "🙆‍♂️", plan: ["4 組，做至力竭前 1-2 下"] }, { title: "棒式", icon: "🧱", plan: ["3 組，每組 30-60 秒"] }] },
+        "正常範圍": { intro: "維持體能，加入 HIIT 提升心肺。", exercises: [{ title: "Tabata 循環", icon: "⏱️", plan: ["20秒運動，10秒休息，做8個循環"] }, { title: "流動瑜珈", icon: "🧘‍♀️", plan: ["30-45 分鐘，每週 2-3 次"] }, { title: "弓箭步", icon: "🦵", plan: ["3 組，每邊腳 12 下"] }] },
+        "過重": { intro: "中等強度循環訓練，有效燃脂。", exercises: [{ title: "自重循環", icon: "🔄", plan: ["深蹲->伏地挺身->弓箭步->棒式"] }, { title: "慢速開合跳", icon: "👐", plan: ["10-15 分鐘，做 2 休 1"] }, { title: "陰瑜珈", icon: "🧘‍♂️", plan: ["20-30 分鐘，放鬆肌肉"] }] },
+        "肥胖": { intro: "超慢跑與低衝擊運動，首要保護關節。", exercises: [{ title: "原地超慢跑", icon: "🐢", plan: ["20-30 分鐘，腳掌輕輕落地"] }, { title: "椅子深蹲", icon: "🪑", plan: ["3 組，10-12 下，屁股點椅子即站起"] }, { title: "靠牆伏地挺身", icon: "🧱", plan: ["3 組，每組 15 下"] }] }
     };
 
     let bmiChart = null;
 
-    // --- 核心功能 ---
+    // --- 核心初始化 ---
     window.onload = function() {
         const urlParams = new URLSearchParams(window.location.search);
         const h = urlParams.get('h');
@@ -229,20 +188,19 @@
         if (h && w) {
             document.getElementById('height').value = h;
             document.getElementById('weight').value = w;
-            calculateBMI();
+            calculateBMI(); 
         }
-    }
+    };
 
     function calculateBMI() {
         const h = parseFloat(document.getElementById('height').value);
         const w = parseFloat(document.getElementById('weight').value);
         if (!h || !w) { alert("💡 請輸入有效的身高與體重！"); return; }
-
+        
         const bmi = (w / ((h / 100) ** 2)).toFixed(1);
         const idealWeight = (22 * ((h / 100) ** 2)).toFixed(1);
         const weightDiff = (w - idealWeight).toFixed(1);
-
-        // 儲存歷史紀錄
+        
         saveToHistory(h, w, bmi);
 
         let info = { status: "", color: "" };
@@ -257,113 +215,165 @@
         document.getElementById('bmi-status').innerText = info.status;
         document.getElementById('status-box').style.borderColor = info.color;
 
-        const goalText = weightDiff > 0 ? `理想體重為 <strong>${idealWeight} kg</strong>，需減重 ${weightDiff} kg。` : `理想體重為 <strong>${idealWeight} kg</strong>，狀態良好！`;
+        const goalText = weightDiff > 0 ? 
+            `理想體重為 <strong>${idealWeight} kg</strong>，需減重 ${weightDiff} kg。` : 
+            `理想體重為 <strong>${idealWeight} kg</strong>，狀態良好！`;
 
-        // 動態生成卡片
         const adviceContainer = document.getElementById('advice-container');
         adviceContainer.innerHTML = `
-            <div class="advice-card history-card clickable-card" onclick="openHistoryModal()">
-                <div class="card-title">📈 BMI 趨勢紀錄 <span class="click-hint">歷史明細 ➔</span></div>
+            <div class="advice-card history-card">
+                <div class="card-title">📈 BMI 趨勢紀錄 <span class="click-hint" onclick="openHistoryModal()" style="cursor:pointer">歷史明細 ➔</span></div>
+                <div class="filter-group">
+                    <select id="timeFilter" class="filter-select" onchange="handleFilterChange()">
+                        <option value="recent">近 10 次紀錄</option>
+                        <option value="month">一個月內</option>
+                        <option value="year">一年內</option>
+                        <option value="custom">自訂日期範圍</option>
+                    </select>
+                    <div id="customDateRange" class="custom-date-inputs">
+                        <input type="date" id="startDate" onchange="renderChart()">
+                        <input type="date" id="endDate" onchange="renderChart()">
+                    </div>
+                </div>
                 <div class="chart-container"><canvas id="bmiChartCanvas"></canvas></div>
             </div>
-
             <div class="advice-card goal-card"><div class="card-title">🎯 健康目標</div><p>${goalText}</p></div>
-            
             <div class="advice-card diet-card clickable-card" onclick="openDietModal('${info.status}')">
                 <div class="card-title">🍎 飲食建議 <span class="click-hint">查看菜單 ➔</span></div>
                 <p>針對「${info.status}」的熱量攝取建議。</p>
             </div>
-
             <div class="advice-card outdoor-card clickable-card" onclick="openOutdoorModal('${info.status}')">
-                <div class="card-title">🌲 戶外方案 <span class="click-hint">選擇場點 ➔</span></div>
-                <p>尋找附近的運動場所。</p>
+                <div class="card-title">🌲 戶外方案 <span class="click-hint">選擇場點 ➔</span></div><p>尋找附近的運動場所。</p>
             </div>
-
             <div class="advice-card home-card clickable-card" onclick="openHomeModal('${info.status}')">
-                <div class="card-title">🏠 居家運動 <span class="click-hint">查看計畫 ➔</span></div>
-                <p>宅在家也能有效運動。</p>
+                <div class="card-title">🏠 居家運動 <span class="click-hint">查看計畫 ➔</span></div><p>宅在家也能有效運動。</p>
             </div>
         `;
-        
-        // 渲染圖表
         renderChart();
         document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // --- 趨勢圖與儲存邏輯 ---
+    // --- 圖表與歷史紀錄邏輯 ---
     function saveToHistory(h, w, bmi) {
         let history = JSON.parse(localStorage.getItem('bmi_history')) || [];
-        const newRecord = {
-            date: new Date().toLocaleDateString('zh-TW', {month:'numeric', day:'numeric'}) + ' ' + new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'}),
-            h: h, w: w, bmi: bmi
-        };
-        // 避免重複儲存完全一樣的紀錄
+        const now = new Date();
+        const dateString = now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' }) + 
+                           ' ' + now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+
+        const newRecord = { date: dateString, fullTimestamp: now.toISOString(), h: h, w: w, bmi: bmi };
+        
         const last = history[history.length - 1];
         if (!last || last.bmi !== bmi || last.w !== w) {
             history.push(newRecord);
-            if (history.length > 10) history.shift(); // 只保留最近10筆
+            if (history.length > 1000) history.shift();
             localStorage.setItem('bmi_history', JSON.stringify(history));
         }
     }
 
+    function handleFilterChange() {
+        const filter = document.getElementById('timeFilter').value;
+        document.getElementById('customDateRange').style.display = (filter === 'custom') ? 'flex' : 'none';
+        renderChart();
+    }
+
+    function getFilteredData() {
+        let history = JSON.parse(localStorage.getItem('bmi_history')) || [];
+        const filter = document.getElementById('timeFilter').value;
+        const now = new Date();
+
+        if (filter === 'recent') return history.slice(-10);
+
+        return history.filter(item => {
+            const itemDate = new Date(item.fullTimestamp);
+            if (filter === 'month') {
+                const oneMonthAgo = new Date(); oneMonthAgo.setMonth(now.getMonth() - 1);
+                return itemDate >= oneMonthAgo;
+            } else if (filter === 'year') {
+                const oneYearAgo = new Date(); oneYearAgo.setFullYear(now.getFullYear() - 1);
+                return itemDate >= oneYearAgo;
+            } else if (filter === 'custom') {
+                const start = document.getElementById('startDate').value ? new Date(document.getElementById('startDate').value) : null;
+                const end = document.getElementById('endDate').value ? new Date(document.getElementById('endDate').value) : null;
+                if (end) end.setHours(23, 59, 59);
+                return (!start || itemDate >= start) && (!end || itemDate <= end);
+            }
+            return true;
+        });
+    }
+
     function renderChart() {
-        const history = JSON.parse(localStorage.getItem('bmi_history')) || [];
+        const filteredData = getFilteredData();
         const ctx = document.getElementById('bmiChartCanvas').getContext('2d');
         if (bmiChart) bmiChart.destroy();
+        
+        if (filteredData.length === 0) {
+            bmiChart = new Chart(ctx, { type: 'line', data: { labels: ['無資料'], datasets: [] } });
+            return;
+        }
 
         bmiChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: history.map(r => r.date.split(' ')[0]),
-                datasets: [{
-                    label: 'BMI 趨勢',
-                    data: history.map(r => r.bmi),
-                    borderColor: '#4a90e2',
-                    backgroundColor: 'rgba(74, 144, 226, 0.1)',
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#4a90e2'
+                labels: filteredData.map(r => r.date.split(' ')[0]), 
+                datasets: [{ 
+                    label: 'BMI', 
+                    data: filteredData.map(r => r.bmi), 
+                    borderColor: '#4a90e2', 
+                    tension: 0.4, 
+                    fill: true, 
+                    backgroundColor: 'rgba(74, 144, 226, 0.1)' 
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { 
-                    y: { ticks: { stepSize: 1 } },
-                    x: { grid: { display: false } }
-                }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { callbacks: { title: (context) => filteredData[context[0].dataIndex].date } }
+                },
+                scales: { x: { ticks: { maxRotation: 45, font: { size: 10 } } } }
             }
         });
     }
 
+    // --- Modal 內容填充 ---
     function openHistoryModal() {
-        const history = JSON.parse(localStorage.getItem('bmi_history')) || [];
-        let html = `<table class="history-table">
-            <tr><th>日期</th><th>身高</th><th>體重</th><th>BMI</th></tr>`;
-        
-        history.slice().reverse().forEach(r => {
-            html += `<tr><td>${r.date}</td><td>${r.h}</td><td>${r.w}</td><td style="font-weight:bold; color:var(--primary-color)">${r.bmi}</td></tr>`;
+        const filteredData = getFilteredData();
+        let html = `<table class="history-table"><tr><th>日期</th><th>身高</th><th>體重</th><th>BMI</th></tr>`;
+        filteredData.slice().reverse().forEach(r => { 
+            html += `<tr><td>${r.date}</td><td>${r.h}</td><td>${r.w}</td><td style="font-weight:bold; color:var(--primary-color)">${r.bmi}</td></tr>`; 
         });
-        html += `</table>`;
-        
-        document.getElementById('history-table-box').innerHTML = history.length ? html : "目前尚無歷史紀錄。";
+        document.getElementById('history-table-box').innerHTML = filteredData.length ? html + "</table>" : "尚無紀錄。";
         document.getElementById('historyModal').style.display = 'block';
     }
 
-    // --- Modal 切換功能 ---
     function openDietModal(status) {
         const data = dietDatabase[status];
         document.getElementById('modal-status-text').innerText = status;
-        document.getElementById('meal-details').innerHTML = `
-            <div class="meal-item"><span class="meal-tag">🌅 早餐建議</span>${data.breakfast}</div>
-            <div class="meal-item"><span class="meal-tag">☀️ 午餐建議</span>${data.lunch}</div>
-            <div class="meal-item"><span class="meal-tag">🌙 晚餐建議</span>${data.dinner}</div>
-        `;
+        const selector = document.getElementById('plan-selector');
+        selector.innerHTML = ""; 
+        data.plans.forEach((plan, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'plan-btn' + (index === 0 ? ' active' : '');
+            btn.innerText = plan.name;
+            btn.onclick = function() {
+                document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderMealPlan(plan);
+            };
+            selector.appendChild(btn);
+        });
+        renderMealPlan(data.plans[0]);
         document.getElementById('gov-link').href = data.link;
         document.getElementById('dietModal').style.display = 'block';
+    }
+
+    function renderMealPlan(plan) {
+        document.getElementById('meal-details').innerHTML = `
+            <div class="meal-item"><span class="meal-tag">🌅 早餐 (${plan.id})</span>${plan.breakfast}</div>
+            <div class="meal-item"><span class="meal-tag">☀️ 午餐 (${plan.id})</span>${plan.lunch}</div>
+            <div class="meal-item"><span class="meal-tag">🌙 晚餐 (${plan.id})</span>${plan.dinner}</div>
+        `;
     }
 
     function openOutdoorModal(status) {
@@ -374,6 +384,7 @@
         data.options.forEach(opt => {
             const div = document.createElement('div');
             div.className = 'option-item clickable';
+            // 修正後的 Google Maps 搜尋連結
             div.onclick = () => window.open(`https://www.google.com/maps/search/${encodeURIComponent(opt.keyword)}`, '_blank');
             div.innerHTML = `<div class="icon-box">${opt.icon}</div><div class="info-box"><h4>${opt.title}</h4><p>${opt.desc}</p></div>`;
             container.appendChild(div);
@@ -389,8 +400,7 @@
         data.exercises.forEach(ex => {
             const div = document.createElement('div');
             div.className = 'option-item';
-            let planHtml = "<ul>" + ex.plan.map(p => `<li>${p}</li>`).join('') + "</ul>";
-            div.innerHTML = `<div class="icon-box">${ex.icon}</div><div class="info-box"><h4>${ex.title}</h4></div><div class="plan-details">${planHtml}</div>`;
+            div.innerHTML = `<div class="icon-box">${ex.icon}</div><div class="info-box"><h4>${ex.title}</h4></div><div class="plan-details"><ul>${ex.plan.map(p => `<li>${p}</li>`).join('')}</ul></div>`;
             container.appendChild(div);
         });
         document.getElementById('homeModal').style.display = 'block';
