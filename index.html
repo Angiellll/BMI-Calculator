@@ -252,11 +252,13 @@
         const h = parseFloat(document.getElementById('height').value);
         const w = parseFloat(document.getElementById('weight').value);
         
-        // 1. 取得勾選狀態與輸入值
-        const isTargetEnabled = document.getElementById('enableTarget') ? document.getElementById('enableTarget').checked : false;
-        const targetWInput = document.getElementById('targetWeight').value;
-        
-        // 2. 只有在「有勾選」且「有填數字」的情況下才會有 targetW，否則一律為 null
+        // 這裡最重要：增加一個保護，如果找不到元件或沒勾選，就給 null
+        const targetEl = document.getElementById('targetWeight');
+        const enableTarget = document.getElementById('enableTarget');
+    
+        // 修正：即便沒有 targetEl，程式也不會崩潰
+        const isTargetEnabled = (enableTarget && enableTarget.checked);
+        const targetWInput = (targetEl) ? targetEl.value : "";
         const targetW = (isTargetEnabled && targetWInput !== "") ? parseFloat(targetWInput) : null;
         
         // 3. 基本檢查：只要身高或體重沒填，就中斷並提醒
@@ -361,6 +363,14 @@
         // 7. 渲染圖表 (確保傳入 targetW，如果為 null 圖表也會正常運作)
         renderChart(targetW); 
         document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+        // 在 calculateBMI() 函式的最後一行
+        setTimeout(() => {
+            const resSection = document.getElementById('result-section');
+            if (resSection) {
+                resSection.style.display = 'block'; // 強制確保顯示
+                resSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
     }
     function toggleTargetInput() {
         const isChecked = document.getElementById('enableTarget').checked;
@@ -568,8 +578,50 @@
         document.getElementById('homeModal').style.display = 'block';
     }
 
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    window.onclick = function(event) { if (event.target.className === 'modal') event.target.style.display = 'none'; }
+    window.addEventListener('load', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const h = urlParams.get('h');
+        const w = urlParams.get('w');
+        const t = urlParams.get('t'); // t 現在是選填的
+
+        if (h && w) {
+            const hInput = document.getElementById('height');
+            const wInput = document.getElementById('weight');
+            const tInput = document.getElementById('targetWeight');
+            const tCheck = document.getElementById('enableTarget');
+
+            if (hInput && wInput) {
+                hInput.value = h;
+                wInput.value = w;
+
+                // 處理目標體重邏輯
+                if (t && tInput && tCheck) {
+                    // 如果網址有 t，才勾選
+                    tCheck.checked = true;
+                    tInput.disabled = false;
+                    tInput.value = t;
+                } else if (tCheck) {
+                    // 如果網址沒傳 t，確保勾選是關閉的，避免 calculateBMI 報錯
+                    tCheck.checked = false;
+                    if (tInput) tInput.disabled = true;
+                }
+
+                // 強制執行計算並顯示
+                setTimeout(() => {
+                    if (typeof calculateBMI === "function") {
+                        calculateBMI(); 
+                    
+                        // 確保結果區塊顯示 (圖三)
+                        const resSection = document.getElementById('result-section');
+                        if (resSection) {
+                            resSection.style.display = 'block';
+                            resSection.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }
+                }, 400); // 給一點緩衝時間讓頁面元件就緒
+            }
+        }
+    });
 </script>
 
 </body>

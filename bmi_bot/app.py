@@ -106,7 +106,10 @@ def handle_message(event):
             diet, outdoor, home = "諮詢營養師建議。", "🏊 游泳保護關節。", "🏠 超慢跑訓練。"
 
         goal_text = f"理想體重 {ideal_weight}kg。{'尚需減少 ' + str(weight_diff) + 'kg' if weight_diff > 0 else '繼續保持！'}"
-        personalized_url = f"{MY_WEBSITE_URL}?h={height}&w={weight}"
+        # 原本的寫法（只有身高體重）
+        # personalized_url = f"{MY_WEBSITE_URL}?h={height}&w={weight}"
+        # 修改後的寫法：自動把計算出來的「理想體重」當作預設目標 t 傳過去
+        personalized_url = f"{MY_WEBSITE_URL}?h={height}&w={weight}&t={ideal_weight}"
 
         # 建立 Flex Message 結構
         flex_content = {
