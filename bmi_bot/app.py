@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import google.generativeai as genai
+import json
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -12,22 +13,36 @@ load_dotenv()
 app = Flask(__name__)
 
 # ==========================================
-# 1. 配置金鑰
+# 1. 配置與檔案處理
 # ==========================================
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'), timeout=60)
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 # 設定 Gemini AI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-# 建議使用最新穩定的 flash 模型
 model = genai.GenerativeModel(model_name='gemini-flash-lite-latest')
 
-# ★ 你的設定 (請確保網址最後沒有多餘的斜槓，或與下方拼接邏輯一致)
+# 設定與路徑
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
 MY_WEBSITE_URL = "https://angiellll.github.io/BMI-Calculator/"
+PROGRESS_FILE = 'user_progress.json'
 
-# [新增] 模擬資料庫：紀錄每個 user_id 的完成天數 (若程式重啟會歸零)
-user_progress = {}
+# --- 讀取/儲存進度功能 (防止 Render 重啟歸零) ---
+def load_progress():
+    if os.path.exists(PROGRESS_FILE):
+        try:
+            with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_progress(data):
+    with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
+
+# 初始化進度資料
+user_progress = load_progress()
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -66,22 +81,25 @@ def get_ai_advice(category):
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    global user_progress
     user_id = event.source.user_id
     user_msg = event.message.text.strip()
 
-    # [新增] 處理「查詢進度」邏輯
+    # 1. 處理「查詢進度」
     if user_msg == "查詢進度":
+        user_progress = load_progress() # 重新讀取確保資料最新
         current_day = user_progress.get(user_id, 0)
         if current_day == 0:
-            reply = "你還沒有開始 30 天挑戰喔！\n快點擊健康報告中的按鈕或完成任務來開始第一天吧！"
+            reply = "你還沒有開始 30 天挑戰喔！\n快完成一次 BMI 計算來獲取挑戰方案吧！"
         else:
-            reply = f"📊 您的個人化挑戰進度：\n目前已持續實踐：{current_day} 天\n距離 30 天目標還剩：{30 - current_day} 天\n\n維持初衷，讓我們一起變得更健康！💪"
+            reply = f"📊 您的個人化挑戰進度：\n目前已持續實踐：{current_day} 天\n距離 30 天目標還剩：{30 - current_day} 天\n\n加油，你是最棒的！💪"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply))
         return
 
-    # [新增] 處理「我已完成實踐」邏輯 (對應網頁按鈕觸發的訊息)
+    # 2. 處理「我已完成實踐」
     if user_msg == "我已完成實踐":
         user_progress[user_id] = user_progress.get(user_id, 0) + 1
+        save_progress(user_progress)
         day = user_progress[user_id]
         line_bot_api.reply_message(
             event.reply_token, 
@@ -89,26 +107,24 @@ def handle_message(event):
         )
         return
 
-    # 1. 處理圖文選單/關鍵字查詢
+    # 3. 處理圖文選單關鍵字
     menu_keywords = ["飲食建議", "運動方案", "體位標準", "常見迷思破解", "身體活動指引"]
     if user_msg in menu_keywords:
         ai_reply = get_ai_advice(user_msg)
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=ai_reply))
         return
 
-    # 2. 處理 BMI 計算邏輯
+    # 4. 處理 BMI 計算邏輯
     try:
-        # 強大解析：取代全形空格、換行，並過濾掉空字串
         clean_msg = user_msg.replace('　', ' ').replace('\n', ' ')
         parts = [p for p in clean_msg.split(' ') if p] 
         
         if len(parts) < 2:
-            return # 不符合格式則不回應，或回傳提示
+            return 
 
         height = float(parts[0])
         weight = float(parts[1])
 
-        # 基礎合理性檢查 (例如身高 50~250cm, 體重 10~300kg)
         if not (50 <= height <= 250 and 10 <= weight <= 300):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text="💡 偵測到數值可能不正確，請重新輸入（身高 體重）"))
             return
@@ -119,7 +135,7 @@ def handle_message(event):
         ideal_weight = round(22 * (height_m ** 2), 1)
         weight_diff = round(weight - ideal_weight, 1)
 
-        # 判定狀態
+        # 判定狀態與內容
         if bmi < 18.5:
             status, color = "體重過輕", "#4a90e2"
             diet, outdoor, home = "加強蛋白質與熱量攝取。", "🏋️ 重訓增肌優於有氧。", "🏠 居家徒手訓練：深蹲。"
@@ -133,7 +149,6 @@ def handle_message(event):
             status, color = "肥胖", "#e74c3c"
             diet, outdoor, home = "尋求營養師制定減脂餐單。", "🏊 水中運動減輕關節負擔。", "🏠 超慢跑訓練。"
 
-        # 生成目標描述
         if weight_diff > 0:
             goal_text = f"理想體重為 {ideal_weight}kg，距離目標還需努力 {weight_diff}kg。"
         elif weight_diff < 0:
@@ -141,11 +156,12 @@ def handle_message(event):
         else:
             goal_text = "恭喜！您正處於完美的理想體重。"
 
-        # 生成網頁連結 (對接你修改後的 HTML)
+        # --- 重要：保留並修正網址拼接邏輯 ---
+        # 確保格式正確，例如：.../index.html?h=175&w=70
         sep = "&" if "?" in MY_WEBSITE_URL else "?"
         personalized_url = f"{MY_WEBSITE_URL}{sep}h={height}&w={weight}"
 
-        # 3. 建立 Flex Message 報告
+        # 5. 建立 Flex Message 報告
         flex_content = {
             "type": "bubble",
             "header": {
