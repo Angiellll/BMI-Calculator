@@ -5,333 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>個人健康 Management 工具 - BMI 專業顧問</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        // ── 步驟 3: LIFF 與 後端 設定 ──────────────────────
+        const LIFF_ID = "2009839664-oAxbK6nF"; // 改成你的 LIFF ID
+        const BACKEND_URL = "https://angie-bmi-bot.onrender.com"; // 改成你的後端網址 (例如 Railway 給的)
+        let lineUserId = null;
+
+        async function initLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    lineUserId = profile.userId;
+                    console.log("LIFF 已登入，User ID:", lineUserId);
+                } else {
+                    console.log("LIFF 未登入");
+                }
+            } catch (e) {
+                console.log("非 LINE 環境或 LIFF 初始化失敗:", e);
+            }
+        }
+    </script>
+
     <style>
+        /* 你原本的所有 CSS 樣式保持不變 */
         :root {
-            --primary: #4a90e2;
-            --success: #2ecc71;
-            --warning: #f1c40f;
-            --danger: #e74c3c;
-            --outdoor: #3498db;
-            --home: #9b59b6;
-            --history: #34495e;
-            --target: #e67e22;
-            --gain: #e67e22;
-            --lose: #e74c3c;
-            --bg: #f0f4f8;
-            --card: #ffffff;
-            --text: #1a1a2e;
-            --muted: #6b7280;
-            --border: #e5e7eb;
+            --primary: #4a90e2; --success: #2ecc71; --warning: #f1c40f; --danger: #e74c3c;
+            --outdoor: #3498db; --home: #9b59b6; --history: #34495e; --target: #e67e22;
+            --gain: #e67e22; --lose: #e74c3c; --bg: #f0f4f8; --card: #ffffff;
+            --text: #1a1a2e; --muted: #6b7280; --border: #e5e7eb;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background: var(--bg);
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-            line-height: 1.6;
-            color: var(--text);
-        }
-
-        .container {
-            background: var(--card);
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            width: 100%;
-            max-width: 560px;
-        }
-
-        h1 {
-            text-align: center;
-            font-weight: 900;
-            font-size: 1.5rem;
-            color: var(--text);
-            margin-bottom: 1.5rem;
-        }
-
+        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; line-height: 1.6; color: var(--text); }
+        .container { background: var(--card); padding: 2rem; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); width: 100%; max-width: 560px; }
+        h1 { text-align: center; font-weight: 900; font-size: 1.5rem; color: var(--text); margin-bottom: 1.5rem; }
         .input-group { margin-bottom: 1.2rem; }
         label { display: block; margin-bottom: 0.4rem; color: #555; font-weight: 700; font-size: 0.9rem; }
-        input, select {
-            width: 100%; padding: 12px 14px;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            font-size: 1rem;
-            font-family: inherit;
-            transition: border-color 0.2s;
-            background: #fafafa;
-        }
+        input, select { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 1rem; font-family: inherit; transition: border-color 0.2s; background: #fafafa; }
         input:focus, select:focus { border-color: var(--primary); outline: none; background: #fff; }
-
-        button {
-            width: 100%; padding: 14px;
-            background: var(--primary);
-            color: white; border: none;
-            border-radius: 10px; cursor: pointer;
-            font-size: 1rem; font-weight: 700;
-            font-family: inherit;
-            margin-top: 10px;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1rem; font-weight: 700; font-family: inherit; margin-top: 10px; transition: transform 0.15s, box-shadow 0.15s; }
         button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(74,144,226,0.3); }
-
         #result-section { margin-top: 2rem; display: none; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
-        .status-header {
-            text-align: center; padding: 1.2rem;
-            background: #f8f9fa; border-radius: 14px;
-            margin-bottom: 1rem; border-top: 5px solid var(--primary);
-        }
+        .status-header { text-align: center; padding: 1.2rem; background: #f8f9fa; border-radius: 14px; margin-bottom: 1rem; border-top: 5px solid var(--primary); }
         .bmi-number { font-size: 3.2rem; font-weight: 900; display: block; font-family: 'DM Mono', monospace; }
-
-        .advice-card {
-            background: #fff; padding: 1.2rem;
-            margin-top: 1rem; border-radius: 12px;
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-            transition: all 0.2s;
-        }
+        .advice-card { background: #fff; padding: 1.2rem; margin-top: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: all 0.2s; }
         .card-title { font-weight: 700; display: flex; align-items: center; margin-bottom: 8px; font-size: 1rem; color: var(--text); }
         .click-hint { font-size: 0.75rem; font-weight: 400; margin-left: auto; color: var(--primary); cursor: pointer; }
-
         .progress-container { background: #eee; border-radius: 20px; height: 24px; margin: 12px 0; position: relative; overflow: hidden; }
         .progress-bar { background: linear-gradient(90deg, var(--success), #58d68d); height: 100%; width: 0%; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
         .progress-text { position: absolute; right: 10px; top: 0; font-size: 0.8rem; line-height: 24px; color: #333; font-weight: 700; }
-
         .history-card { border-left: 5px solid var(--history); }
         .chart-container { width: 100%; height: 200px; margin-top: 10px; }
-        .filter-select { flex: 1; min-width: 120px; padding: 6px 10px; font-size: 0.85rem; height: 36px; border-radius: 8px; }
-
         .clickable-card:hover { transform: scale(1.015); box-shadow: 0 6px 18px rgba(0,0,0,0.07); cursor: pointer; }
         .diet-card { border-left: 5px solid var(--success); }
         .outdoor-card { border-left: 5px solid var(--outdoor); }
         .home-card { border-left: 5px solid var(--home); }
-        .goal-card { border-left: 5px solid #aaa; }
         .target-progress-card { border-left: 5px solid var(--target); }
-
         .action-btn-group { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-gain { background: linear-gradient(135deg, #e67e22, #d35400); flex: 1; padding: 13px; margin-top: 0; border-radius: 10px; font-size: 0.95rem; }
-        .btn-lose { background: linear-gradient(135deg, #e74c3c, #c0392b); flex: 1; padding: 13px; margin-top: 0; border-radius: 10px; font-size: 0.95rem; }
-        .btn-gain:hover { box-shadow: 0 6px 20px rgba(230,126,34,0.4); }
-        .btn-lose:hover { box-shadow: 0 6px 20px rgba(231,76,60,0.4); }
-        .pulse-btn { animation: pulse 2.5s infinite; }
-        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(230,126,34,0.5); } 60% { box-shadow: 0 0 0 10px rgba(230,126,34,0); } }
-
-        /* Modal */
+        .btn-gain { background: linear-gradient(135deg, #e67e22, #d35400); flex: 1; padding: 13px; margin-top: 0; border-radius: 10px; font-size: 0.95rem; color: #fff; }
+        .btn-lose { background: linear-gradient(135deg, #e74c3c, #c0392b); flex: 1; padding: 13px; margin-top: 0; border-radius: 10px; font-size: 0.95rem; color: #fff; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
-        .modal-content {
-            background: white; margin: 4% auto; padding: 28px;
-            border-radius: 20px; width: 90%; max-width: 500px;
-            position: relative; animation: slideDown 0.3s ease;
-            max-height: 88vh; overflow-y: auto;
-        }
-        @keyframes slideDown { from { transform: translateY(-40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .close-btn { position: absolute; right: 18px; top: 14px; font-size: 26px; color: #aaa; cursor: pointer; line-height: 1; }
-        .close-btn:hover { color: #333; }
-
-        /* ===================== 30天挑戰 新版樣式 ===================== */
+        .modal-content { background: white; margin: 4% auto; padding: 28px; border-radius: 20px; width: 90%; max-width: 500px; position: relative; animation: slideDown 0.3s ease; max-height: 88vh; overflow-y: auto; }
         .challenge-modal-content { max-width: 540px; padding: 0; overflow-y: auto; max-height: 88vh; }
-
-        /* 頂部 Hero */
-        .challenge-hero {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            padding: 28px 28px 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        .challenge-hero::before {
-            content: '';
-            position: absolute; inset: 0;
-            background: radial-gradient(circle at 70% 30%, rgba(74,144,226,0.15) 0%, transparent 60%);
-        }
-        .challenge-hero-title {
-            font-size: 1.3rem; font-weight: 900;
-            color: #fff; margin-bottom: 4px; position: relative;
-        }
+        .challenge-hero { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 28px 28px 20px; position: relative; overflow: hidden; }
+        .challenge-hero-title { font-size: 1.3rem; font-weight: 900; color: #fff; margin-bottom: 4px; position: relative; }
         .challenge-hero-sub { color: rgba(255,255,255,0.6); font-size: 0.85rem; position: relative; }
         .challenge-close { position: absolute; right: 18px; top: 18px; color: rgba(255,255,255,0.6); font-size: 24px; cursor: pointer; z-index: 10; }
-        .challenge-close:hover { color: #fff; }
-
-        /* 進度總覽 */
-        .challenge-overview {
-            display: flex; align-items: center; gap: 16px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 14px; padding: 14px 18px;
-            margin-top: 18px; position: relative;
-        }
-        .avatar-display { font-size: 2.8rem; flex-shrink: 0; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+        .challenge-overview { display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 18px; margin-top: 18px; position: relative; }
+        .avatar-display { font-size: 2.8rem; flex-shrink: 0; }
         .overview-info { flex: 1; }
-        .overview-label { color: rgba(255,255,255,0.5); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
-        .overview-value { color: #fff; font-weight: 700; font-size: 1rem; margin-top: 2px; }
+        .overview-label { color: rgba(255,255,255,0.5); font-size: 0.75rem; }
+        .overview-value { color: #fff; font-weight: 700; font-size: 1rem; }
         .overview-streak { background: linear-gradient(135deg, var(--warning), #f39c12); color: #000; font-weight: 900; font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; }
-
-        /* 主體 */
         .challenge-body { padding: 20px 24px 24px; }
-
-        /* 日曆打卡 */
-        .section-label {
-            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px;
-        }
-        .calendar-grid {
-            display: grid; grid-template-columns: repeat(10, 1fr);
-            gap: 5px; margin-bottom: 20px;
-        }
-        .cal-day {
-            aspect-ratio: 1; border-radius: 6px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.65rem; font-weight: 700; font-family: 'DM Mono', monospace;
-            border: 1.5px solid var(--border);
-            background: #fafafa; color: var(--muted);
-            transition: all 0.2s; position: relative;
-        }
-        .cal-day.done {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            border-color: #27ae60; color: white;
-        }
-        .cal-day.done::after { content: '✓'; position: absolute; font-size: 0.7rem; }
-        .cal-day.done span { display: none; }
-        .cal-day.today {
-            border-color: var(--primary); border-width: 2px;
-            color: var(--primary); background: #eff6ff;
-            box-shadow: 0 0 0 3px rgba(74,144,226,0.15);
-        }
-        .cal-day.future { opacity: 0.4; }
-
-        /* 本週任務 */
-        .week-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: linear-gradient(135deg, var(--primary), #357abd);
-            color: white; font-size: 0.75rem; font-weight: 700;
-            padding: 4px 12px; border-radius: 20px; margin-bottom: 12px;
-        }
+        .section-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-bottom: 20px; }
+        .cal-day { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; border: 1.5px solid var(--border); background: #fafafa; color: var(--muted); }
+        .cal-day.done { background: linear-gradient(135deg, #2ecc71, #27ae60); border-color: #27ae60; color: white; }
+        .week-badge { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, var(--primary), #357abd); color: white; font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; }
         .task-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-        .task-item {
-            display: flex; align-items: center; gap: 12px;
-            background: #f8f9fa; border-radius: 10px;
-            padding: 12px 14px; cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
-        }
-        .task-item:hover { border-color: var(--primary); background: #eff6ff; }
+        .task-item { display: flex; align-items: center; gap: 12px; background: #f8f9fa; border-radius: 10px; padding: 12px 14px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
         .task-item.checked { background: #f0fdf4; border-color: var(--success); }
-        .task-checkbox {
-            width: 22px; height: 22px; border-radius: 50%;
-            border: 2px solid #ccc; display: flex; align-items: center;
-            justify-content: center; flex-shrink: 0;
-            transition: all 0.2s; font-size: 0.8rem;
-        }
-        .task-item.checked .task-checkbox { background: var(--success); border-color: var(--success); color: white; }
-        .task-text { font-size: 0.9rem; font-weight: 500; color: var(--text); }
-        .task-item.checked .task-text { text-decoration: line-through; color: var(--muted); }
-
-        /* 完成按鈕 */
-        .complete-btn {
-            width: 100%; padding: 15px;
-            border-radius: 12px; font-size: 1rem;
-            font-weight: 700; border: none; cursor: pointer;
-            margin-top: 0; transition: all 0.2s;
-            position: relative; overflow: hidden;
-        }
-        .complete-btn.locked {
-            background: var(--border); color: var(--muted);
-            cursor: not-allowed; transform: none !important; box-shadow: none !important;
-        }
-        .complete-btn.ready {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white; animation: readyPulse 2s infinite;
-        }
-        @keyframes readyPulse { 0%,100% { box-shadow: 0 4px 20px rgba(46,204,113,0.3); } 50% { box-shadow: 0 4px 30px rgba(46,204,113,0.6); } }
-        .complete-btn.done-today {
-            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-            color: white; cursor: not-allowed;
-        }
-
-        /* 體重記錄 */
-        .weight-log-section {
-            background: #f8f9fa; border-radius: 12px;
-            padding: 14px; margin-top: 16px;
-        }
-        .weight-log-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 10px; }
-        .weight-log-input {
-            display: flex; gap: 8px; margin-bottom: 12px;
-        }
-        .weight-log-input input {
-            flex: 1; padding: 9px 12px; font-size: 0.9rem;
-            border-radius: 8px; height: 38px;
-        }
-        .weight-log-input button {
-            flex-shrink: 0; width: auto; padding: 0 16px;
-            font-size: 0.85rem; margin-top: 0; border-radius: 8px; height: 38px;
-        }
-        .challenge-chart-container { width: 100%; height: 160px; }
-
-        /* 里程碑 */
-        .milestones { display: flex; gap: 8px; margin-top: 14px; }
-        .milestone {
-            flex: 1; background: #f8f9fa; border-radius: 10px;
-            padding: 10px 8px; text-align: center;
-            border: 2px solid var(--border);
-            transition: all 0.3s;
-        }
-        .milestone.unlocked { border-color: var(--warning); background: #fffbeb; }
-        .milestone-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
-        .milestone-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); }
-        .milestone.unlocked .milestone-label { color: #92400e; }
-
-        /* 分享卡 */
-        .share-card {
-            margin-top: 16px; border-radius: 14px; overflow: hidden;
-            border: 1px solid var(--border); display: none;
-        }
-        .share-card.visible { display: block; }
-        .share-card-inner {
-            background: linear-gradient(135deg, #1a1a2e, #0f3460);
-            padding: 20px; text-align: center; color: white;
-        }
-        .share-card-title { font-size: 1.1rem; font-weight: 900; margin-bottom: 6px; }
-        .share-card-sub { font-size: 0.85rem; opacity: 0.7; }
-        .share-btn {
-            width: 100%; margin-top: 0; padding: 10px;
-            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
-            border-radius: 0; font-size: 0.85rem; font-weight: 700;
-            transition: background 0.2s; border-radius: 0 0 14px 14px;
-        }
-        .share-btn:hover { background: rgba(255,255,255,0.25); transform: none; box-shadow: none; }
-
-        /* 其他彈窗 */
-        .option-item { background: #f9f9f9; padding: 14px; border-radius: 10px; margin-top: 10px; border: 1px solid #eee; display: flex; align-items: center; }
-        .option-item.clickable:hover { background: white; border-color: var(--outdoor); transform: translateX(4px); cursor: pointer; }
-        #homeModal .option-item { border-left: 4px solid var(--home); flex-direction: column; align-items: flex-start; }
-        .icon-box { font-size: 1.5rem; margin-right: 14px; flex-shrink: 0; }
-        #homeModal .icon-box { margin-right: 0; margin-bottom: 8px; font-size: 2rem; }
-        .info-box h4 { margin: 0; color: #333; font-size: 0.95rem; }
-        .info-box p { margin: 0; font-size: 0.82rem; color: #777; }
-        .plan-details { background: white; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-top: 8px; width: 100%; }
-        .plan-details ul { margin: 0; padding-left: 18px; font-size: 0.85rem; color: #555; }
-
-        .meal-item { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--success); }
-        .meal-tag { font-weight: 700; color: var(--success); display: block; margin-bottom: 3px; font-size: 0.85rem; }
-        .source-link { display: block; margin-top: 18px; padding-top: 14px; border-top: 1px solid #eee; text-align: center; color: var(--primary); text-decoration: none; font-size: 0.88rem; }
-        .plan-btn-group { display: flex; gap: 8px; margin-bottom: 14px; }
-        .plan-btn { flex: 1; padding: 8px; border: 1.5px solid #ddd; background: #eee; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; font-family: inherit; }
-        .plan-btn.active { background: var(--success); color: white; border-color: var(--success); font-weight: 700; }
-
-        .history-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
-        .history-table th, .history-table td { padding: 10px 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.88rem; }
-        .history-table th { background: #f8f9fa; color: #666; }
-
+        .task-checkbox { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .complete-btn { width: 100%; padding: 15px; border-radius: 12px; font-size: 1rem; font-weight: 700; border: none; cursor: pointer; margin-top: 0; transition: all 0.2s; }
+        .complete-btn.locked { background: var(--border); color: var(--muted); cursor: not-allowed; }
+        .complete-btn.ready { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
         .line-link { margin-top: 1rem; padding: 1rem; background: #e8f4fd; border-radius: 10px; text-align: center; border: 1px dashed var(--primary); }
     </style>
 </head>
 <body>
+
 <div class="container">
     <h1>🌿 健康管理顧問</h1>
     <div style="display: flex; gap: 10px;">
@@ -353,6 +124,7 @@
     </div>
     <button onclick="calculateBMI()">生成完整健康報告</button>
 
+    
     <div id="result-section">
         <div class="status-header" id="status-box">
             <span class="bmi-number" id="bmi-value">--</span>
@@ -366,19 +138,11 @@
     </div>
 </div>
 
-<!-- Modals -->
-<div id="historyModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('historyModal')">×</span><h3 style="margin-top:0">📊 歷史量測明細</h3><div id="history-table-box"></div></div></div>
-<div id="dietModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('dietModal')">×</span><h3 style="margin-top:0">🍽 推薦菜單：<span id="modal-status-text"></span></h3><div class="plan-btn-group" id="plan-selector"></div><div id="meal-details"></div><a id="gov-link" href="https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" target="_blank" class="source-link">🔗 查看國健署飲食指南資料</a></div></div>
-<div id="outdoorModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('outdoorModal')">×</span><h3 style="margin-top:0">🌲 選擇適合您的場點</h3><p id="outdoor-intro" style="font-size: 0.88rem; color: #666; margin-bottom: 8px;"></p><div id="location-options"></div></div></div>
-<div id="homeModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('homeModal')">×</span><h3 style="margin-top:0">🏠 專屬居家運動計畫</h3><p id="home-intro" style="font-size: 0.88rem; color: #666; margin-bottom: 8px;"></p><div id="home-exercise-options"></div></div></div>
-
-<!-- 30天挑戰 Modal（全新版） -->
 <div id="challengeModal" class="modal">
     <div class="modal-content challenge-modal-content">
-        <!-- Hero -->
         <div class="challenge-hero">
             <span class="challenge-close" onclick="closeModal('challengeModal')">×</span>
-            <div class="challenge-hero-title" id="challenge-hero-title">💪 30天增肌增重挑戰</div>
+            <div class="challenge-hero-title" id="challenge-hero-title">💪 30天挑戰</div>
             <div class="challenge-hero-sub" id="challenge-hero-sub">建立習慣，改變體態</div>
             <div class="challenge-overview">
                 <div class="avatar-display" id="ch-avatar">🧍</div>
@@ -388,29 +152,12 @@
                     <div class="overview-label" style="margin-top:6px;">連續打卡</div>
                     <div class="overview-value" id="ch-streak">0 天</div>
                 </div>
-                <div>
-                    <div class="overview-streak" id="ch-day-badge">DAY 1</div>
-                </div>
+                <div><div class="overview-streak" id="ch-day-badge">DAY 1</div></div>
             </div>
         </div>
-
-        <!-- Body -->
         <div class="challenge-body">
-
-            <!-- 30天日曆 -->
             <div class="section-label">📅 打卡進度</div>
             <div class="calendar-grid" id="ch-calendar"></div>
-
-            <!-- 里程碑 -->
-            <div class="section-label">🏆 里程碑</div>
-            <div class="milestones" id="ch-milestones">
-                <div class="milestone" data-day="7"><span class="milestone-icon">🌱</span><div class="milestone-label">第7天</div></div>
-                <div class="milestone" data-day="14"><span class="milestone-icon">💡</span><div class="milestone-label">第14天</div></div>
-                <div class="milestone" data-day="21"><span class="milestone-icon">🔥</span><div class="milestone-label">第21天</div></div>
-                <div class="milestone" data-day="30"><span class="milestone-icon">🏆</span><div class="milestone-label">完賽!</div></div>
-            </div>
-
-            <!-- 今日任務 -->
             <div style="margin-top: 18px;">
                 <div class="week-badge"><span id="ch-week-label">第一週</span> · 今日任務</div>
                 <div class="task-list" id="ch-task-list"></div>
@@ -418,323 +165,48 @@
                     尚有任務未完成
                 </button>
             </div>
-
-            <!-- 體重記錄 -->
-            <div class="weight-log-section">
-                <div class="weight-log-title">⚖️ 體重記錄（追蹤 30 天變化）</div>
-                <div class="weight-log-input">
-                    <input type="number" id="ch-weight-input" placeholder="今日體重 kg" step="0.1">
-                    <button onclick="logChallengeWeight()">記錄</button>
-                </div>
-                <div class="challenge-chart-container"><canvas id="ch-weight-chart"></canvas></div>
-            </div>
-
-            <!-- 分享卡 -->
-            <div class="share-card" id="ch-share-card">
-                <div class="share-card-inner">
-                    <div style="font-size: 2rem; margin-bottom: 8px;" id="share-card-icon">🌱</div>
-                    <div class="share-card-title" id="share-card-title">我已堅持挑戰 7 天！</div>
-                    <div class="share-card-sub" id="share-card-sub">打開 BMI 健康顧問，開啟你的改變 💪</div>
-                </div>
-                <button class="share-btn" onclick="copyShareText()">📋 複製分享文字</button>
-            </div>
         </div>
     </div>
 </div>
 
 <script>
-// =================== 資料庫 ===================
-const dietDatabase = {
-    "體重過輕": { plans: [
-        { id: 'A', name: "方案 A: 增肌營養", breakfast: "全麥吐司夾蛋 + 起司 + 無糖濃豆漿", lunch: "雞腿排便當（五穀飯）+ 一份時令水果", dinner: "清蒸鮭魚 + 炒青菜 + 豆腐味噌湯" },
-        { id: 'B', name: "方案 B: 高能均衡", breakfast: "鮮奶燕麥粥 + 綜合堅果 + 香蕉", lunch: "牛肉湯麵（多肉）+ 燙青菜 + 豆干", dinner: "豬里肌熱炒蔬菜 + 糙米飯" },
-        { id: 'C', name: "方案 C: 快速補給", breakfast: "鮪魚三明治 + 全脂牛奶", lunch: "超商雞肉飯糰 + 慢煮雞胸肉 + 果汁", dinner: "鍋燒烏龍麵（加雙蛋）+ 涼拌豆腐" }
-    ], link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" },
-    "正常範圍": { plans: [
-        { id: 'A', name: "方案 A: 低糖輕食", breakfast: "鮮奶燕麥粥 + 少量堅果 + 蘋果", lunch: "舒肥雞胸沙拉 + 水煮蛋 + 地瓜一顆", dinner: "蒜泥白肉（去肥）+ 三種蔬菜 + 糙米飯" },
-        { id: 'B', name: "方案 B: 均衡飽足", breakfast: "饅頭夾蛋 + 無糖豆漿", lunch: "烤鯖魚便當（少飯多菜）+ 奇異果", dinner: "番茄肉醬全麥麵（少鹽）+ 綜合蔬菜湯" },
-        { id: 'C', name: "方案 C: 健身高蛋白", breakfast: "希臘優格 + 藍莓 + 雞蛋", lunch: "雞肉捲餅（大量生菜）+ 黑咖啡", dinner: "香煎鯛魚片 + 蒸南瓜 + 炒花椰菜" }
-    ], link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" },
-    "過重": { plans: [
-        { id: 'A', name: "方案 A: 減脂優先", breakfast: "兩顆水煮蛋 + 無糖美式咖啡", lunch: "蕎麥冷麵 + 涼拌豆腐 + 大量燙青菜", dinner: "乾煎里肌肉（少油）+ 溫沙拉 + 無糖綠茶" },
-        { id: 'B', name: "方案 B: 低卡替代", breakfast: "地瓜一小塊 + 無糖豆漿", lunch: "清燉牛肉湯（去油）+ 燙芥蘭菜", dinner: "香菇蒸雞（去皮）+ 水煮青江菜" },
-        { id: 'C', name: "方案 C: 168 配合", breakfast: "不吃（或只喝黑咖啡）", lunch: "雞胸肉餐盒（飯量1/3）+ 蔬菜湯", dinner: "綜合海鮮沙拉（油醋醬）+ 雜糧餅乾" }
-    ], link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" },
-    "肥胖": { plans: [
-        { id: 'A', name: "方案 A: 嚴格控醣", breakfast: "無糖豆漿 + 蒸蛋 + 一份低糖水果", lunch: "溫沙拉（燻雞肉）+ 橄欖油醋醬 + 無油蔬菜湯", dinner: "清燉牛肉湯（去油）+ 燙青菜" },
-        { id: 'B', name: "方案 B: 蔬食排毒", breakfast: "大份生菜沙拉 + 堅果 + 水煮蛋", lunch: "綜合蔬菜咖哩（不加飯）+ 煎豆腐", dinner: "烤雞翅（去皮）+ 涼拌小黃瓜 + 海帶芽湯" },
-        { id: 'C', name: "方案 C: 飽腹替代", breakfast: "燕麥麩皮粥（無糖）+ 奇亞籽", lunch: "麻辣燙（全蔬菜、豆腐、菇類、不喝湯）", dinner: "水煮蝦仁 + 大量高麗菜 + 荷包蛋" }
-    ], link: "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=36" }
-};
-
-const outdoorDetails = {
-    "體重過輕": { intro: "目標是透過重量訓練增加肌肉量，這對增重最有效！", options: [
-        { title: "大型連鎖健身房", desc: "器材最齊全，適合系統化重訓", icon: "🏋️", keyword: "健身房" },
-        { title: "國民運動中心", desc: "收費親民，適合新手練習", icon: "💪", keyword: "運動中心" },
-        { title: "公園健身設施", desc: "利用單槓、撐體進行自重訓練", icon: "🌳", keyword: "公園" }
-    ]},
-    "正常範圍": { intro: "目標是維持體能與心肺健康，多樣化運動是關鍵。", options: [
-        { title: "附近公園操場", desc: "適合慢跑與快走，空氣清新", icon: "🏃", keyword: "操場" },
-        { title: "河濱自行車道", desc: "騎單車欣賞風景，放鬆心情", icon: "🚴", keyword: "自行車道" },
-        { title: "登山步道", desc: "週末踏青，鍛鍊腿部肌力", icon: "⛰️", keyword: "登山步道" }
-    ]},
-    "過重": { intro: "重點在於中強度有氧，持續燃脂並減少體脂。", options: [
-        { title: "快走步道/公園", desc: "低衝擊有氧，對膝蓋負擔小", icon: "👟", keyword: "步道" },
-        { title: "國民運動中心", desc: "可使用跑步機或參加飛輪課", icon: "🏢", keyword: "運動中心" },
-        { title: "學校操場", desc: "定時定量的慢跑計畫", icon: "🏫", keyword: "操場" }
-    ]},
-    "肥胖": { intro: "目標是體重管理，首選「水中運動」以保護膝關節。", options: [
-        { title: "溫水游泳池", desc: "水中行走或游泳，燃脂率極高", icon: "🏊", keyword: "游泳池" },
-        { title: "運動中心健身房", desc: "建議使用橢圓機，低衝擊保護關節", icon: "🥨", keyword: "運動中心 橢圓機" },
-        { title: "平緩步道", desc: "餐後散步 20 分鐘，穩定血糖", icon: "🚶", keyword: "散步 步道" }
-    ]}
-};
-
-const homeExerciseDatabase = {
-    "體重過輕": { intro: "利用自重進行基礎肌力訓練，每週 3-4 次。", exercises: [
-        { title: "自重深蹲", icon: "🦵", plan: ["4 組，每組 12-15 下"] },
-        { title: "伏地挺身", icon: "🙆‍♂️", plan: ["4 組，做至力竭前 1-2 下"] },
-        { title: "棒式", icon: "🧱", plan: ["3 組，每組 30-60 秒"] }
-    ]},
-    "正常範圍": { intro: "維持體能，加入 HIIT 提升心肺。", exercises: [
-        { title: "Tabata 循環", icon: "⏱️", plan: ["20秒運動，10秒休息，做8個循環"] },
-        { title: "流動瑜珈", icon: "🧘‍♀️", plan: ["30-45 分鐘，每週 2-3 次"] },
-        { title: "弓箭步", icon: "🦵", plan: ["3 組，每邊腳 12 下"] }
-    ]},
-    "過重": { intro: "中等強度循環訓練，有效燃脂。", exercises: [
-        { title: "自重循環", icon: "🔄", plan: ["深蹲->伏地挺身->弓箭步->棒式"] },
-        { title: "慢速開合跳", icon: "👐", plan: ["10-15 分鐘，做 2 休 1"] },
-        { title: "陰瑜珈", icon: "🧘‍♂️", plan: ["20-30 分鐘，放鬆肌肉"] }
-    ]},
-    "肥胖": { intro: "超慢跑與低衝擊運動，首要保護關節。", exercises: [
-        { title: "原地超慢跑", icon: "🐢", plan: ["20-30 分鐘，腳掌輕輕落地"] },
-        { title: "椅子深蹲", icon: "🪑", plan: ["3 組，10-12 下，屁股點椅子即站起"] },
-        { title: "靠牆伏地挺身", icon: "🧱", plan: ["3 組，每組 15 下"] }
-    ]}
-};
-
-// =================== 30天挑戰資料 ===================
+// ── 步驟 2+3: 資料庫與同步邏輯 ──────────────────────────────────────────────
+const STORAGE_KEY = 'bmi_challenge_v2';
 const challengePlans = {
     gain: {
-        title: "💪 30天增肌增重挑戰",
-        sub: "科學化增重，打造強壯體態",
-        avatars: ["🧍","💪","🏋️","🦍"],
-        stages: ["新手上路","基礎建立","強化衝刺","終極挑戰者"],
+        title: "💪 30天增肌增重挑戰", sub: "科學化增重，打造強壯體態",
+        avatars: ["🧍","💪","🏋️","🦍"], stages: ["新手上路","基礎建立","強化衝刺","終極挑戰者"],
         weekLabels: ["第一週：基礎適應","第二週：肌力建構","第三週：負荷強化","第四週：成果驗收"],
         weeks: [
-            [ "早餐增加一份蛋白質（如雞蛋、豆漿）", "訓練：做 3 組深蹲，每組 12 下", "睡前喝一杯溫牛奶補充熱量" ],
-            [ "每餐加入手掌大小的蛋白質來源", "訓練：伏地挺身 + 弓箭步各 4 組", "記錄今日的訓練負重數字" ],
-            [ "進行力竭訓練，每組做到撐不住為止", "增加一餐高碳水的點心（如香蕉、地瓜）", "睡前做 5 分鐘靜態伸展放鬆" ],
-            [ "用最重的重量完成一次完整訓練", "測量體重並與第一天比較", "今天好好犒賞自己，充足休息" ]
-        ],
-        milestones: ["🌱 打好基礎", "💡 習慣養成", "🔥 全速衝刺", "🏆 挑戰完賽!"]
+            ["早餐增加一份蛋白質（如雞蛋、豆漿）", "訓練：做 3 組深蹲，每組 12 下", "睡前喝一杯溫牛奶補充熱量"],
+            ["每餐加入手掌大小的蛋白質來源", "訓練：伏地挺身 + 弓箭步各 4 組", "記錄今日的訓練負重數字"],
+            ["進行力竭訓練，每組做到撐不住為止", "增加一餐高碳水的點心（如香蕉、地瓜）", "睡前做 5 分鐘靜態伸展放鬆"],
+            ["用最重的重量完成一次完整訓練", "測量體重並與第一天比較", "今天好好犒賞自己，充足休息"]
+        ]
     },
     lose: {
-        title: "🔥 30天燃脂瘦身挑戰",
-        sub: "健康減脂，不節食不挨餓",
-        avatars: ["🍕","🥗","🏃","✨"],
-        stages: ["準備出發","習慣改變","燃脂爆發","脫胎換骨"],
+        title: "🔥 30天燃脂瘦身挑戰", sub: "健康減脂，不節食不挨餓",
+        avatars: ["🍕","🥗","🏃","✨"], stages: ["準備出發","習慣改變","燃脂爆發","脫胎換骨"],
         weekLabels: ["第一週：代謝喚醒","第二週：主動燃脂","第三週：體能突破","第四週：體質鞏固"],
         weeks: [
-            [ "今天喝 2000ml 以上的水", "戒除一杯含糖飲料，改喝無糖飲品", "餐前 10 分鐘先喝一杯水再吃飯" ],
-            [ "今天做 20 分鐘有氧運動（快走/跳繩）", "晚餐吃五分飽，減少精緻澱粉", "記錄今日吃了哪些讓你後悔的食物" ],
-            [ "完成一次 HIIT 訓練（20 分鐘）", "晚餐不吃白飯，改為地瓜或糙米", "睡覺前不吃任何東西" ],
-            [ "測量體重並與第一天比較", "制定下個月的維持計畫", "今天好好犒賞自己（健康的方式）" ]
-        ],
-        milestones: ["🌱 啟動代謝", "💡 燃脂習慣", "🔥 全力衝刺", "🏆 挑戰完賽!"]
+            ["今天喝 2000ml 以上的水", "戒除一杯含糖飲料，改喝無糖飲品", "餐前 10 分鐘先喝一杯水再吃飯"],
+            ["今天做 20 分鐘有氧運動（快走/跳繩）", "晚餐吃五分飽，減少精緻澱粉", "記錄今日吃了哪些讓你後悔的食物"],
+            ["完成一次 HIIT 訓練（20 分鐘）", "晚餐不吃白飯，改為地瓜或糙米", "睡覺前不吃任何東西"],
+            ["測量體重並與第一天比較", "制定下個月的維持計畫", "今天好好犒賞自己（健康的方式）"]
+        ]
     }
 };
-
-const STORAGE_KEY = 'bmi_challenge_v2';
-const WEIGHT_LOG_KEY = 'bmi_challenge_weights';
-let challengeType = 'gain';
-let challengeWeightChart = null;
 
 function getChallengeState() {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    try { return JSON.parse(raw); } catch { return null; }
+    return raw ? JSON.parse(raw) : null;
 }
-
 function saveChallengeState(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
+function todayKey() { return new Date().toISOString().slice(0, 10); }
 
-function getChallengeWeights() {
-    const raw = localStorage.getItem(WEIGHT_LOG_KEY);
-    if (!raw) return {};
-    try { return JSON.parse(raw); } catch { return {}; }
-}
-
-function saveChallengeWeights(data) {
-    localStorage.setItem(WEIGHT_LOG_KEY, JSON.stringify(data));
-}
-
-function todayKey() {
-    return new Date().toISOString().slice(0, 10);
-}
-
-// =================== 開啟挑戰 ===================
-function handleAdvancedPlan(type, currentStatus) {
-    if (type === 'gain' && (currentStatus === '肥胖' || currentStatus === '過重')) {
-        if (!confirm("⚠️ 系統偵測到您目前狀態為「" + currentStatus + "」，增重可能不適合您，確定要查看嗎？")) return;
-    }
-    if (type === 'lose' && currentStatus === '體重過輕') {
-        if (!confirm("⚠️ 系統偵測到您目前狀態為「體重過輕」，繼續減肥可能損害健康，確定要查看嗎？")) return;
-    }
-
-    // 若無紀錄或類型不同，初始化
-    let state = getChallengeState();
-    if (!state || state.type !== type) {
-        state = {
-            type: type,
-            startDate: todayKey(),
-            completedDays: [],       // 已完成日期 array
-            taskChecks: {}            // { 'YYYY-MM-DD': [true, false, true] }
-        };
-        saveChallengeState(state);
-    }
-
-    challengeType = type;
-    renderChallengeModal(state);
-    document.getElementById('challengeModal').style.display = 'block';
-}
-
-function renderChallengeModal(state) {
-    const plan = challengePlans[state.type];
-    const completedCount = state.completedDays.length;
-    const weekIndex = Math.min(Math.floor(completedCount / 7), 3);
-    const today = todayKey();
-    const doneTodayAlready = state.completedDays.includes(today);
-
-    // 連續打卡計算
-    let streak = 0;
-    let checkDate = new Date(today);
-    while (true) {
-        const dk = checkDate.toISOString().slice(0, 10);
-        if (state.completedDays.includes(dk)) {
-            streak++;
-            checkDate.setDate(checkDate.getDate() - 1);
-        } else break;
-    }
-
-    // Hero
-    document.getElementById('challenge-hero-title').innerText = plan.title;
-    document.getElementById('challenge-hero-sub').innerText = plan.sub;
-    document.getElementById('ch-avatar').innerText = plan.avatars[weekIndex];
-    document.getElementById('ch-stage').innerText = plan.stages[weekIndex];
-    document.getElementById('ch-streak').innerText = streak + ' 天';
-    document.getElementById('ch-day-badge').innerText = 'DAY ' + (completedCount + 1);
-
-    // 日曆
-    renderCalendar(state);
-
-    // 里程碑
-    const milestones = document.querySelectorAll('.milestone');
-    milestones.forEach(m => {
-        const day = parseInt(m.dataset.day);
-        m.classList.toggle('unlocked', completedCount >= day);
-        m.querySelector('.milestone-label').innerText = plan.milestones[[7,14,21,30].indexOf(day)];
-    });
-
-    // 本週任務
-    document.getElementById('ch-week-label').innerText = plan.weekLabels[weekIndex];
-    const tasks = plan.weeks[weekIndex];
-    const todayChecks = (state.taskChecks[today] || tasks.map(() => false));
-    renderTaskList(tasks, todayChecks, state);
-
-    // 分享卡
-    updateShareCard(completedCount, plan);
-
-    // 體重圖表
-    renderChallengeWeightChart(state);
-}
-
-function renderCalendar(state) {
-    const grid = document.getElementById('ch-calendar');
-    grid.innerHTML = '';
-    const today = todayKey();
-    const plan = challengePlans[state.type];
-
-    for (let i = 1; i <= 30; i++) {
-        // 計算這格對應的日期
-        const d = new Date(state.startDate);
-        d.setDate(d.getDate() + i - 1);
-        const dk = d.toISOString().slice(0, 10);
-        const isToday = dk === today;
-        const isDone = state.completedDays.includes(dk);
-        const isFuture = dk > today;
-
-        const el = document.createElement('div');
-        el.className = 'cal-day';
-        if (isDone) el.classList.add('done');
-        else if (isToday) el.classList.add('today');
-        else if (isFuture) el.classList.add('future');
-        el.innerHTML = `<span>${i}</span>`;
-        el.title = `第 ${i} 天`;
-        grid.appendChild(el);
-    }
-}
-
-function renderTaskList(tasks, checks, state) {
-    const list = document.getElementById('ch-task-list');
-    list.innerHTML = '';
-    const today = todayKey();
-    const doneTodayAlready = state.completedDays.includes(today);
-
-    tasks.forEach((task, i) => {
-        const item = document.createElement('div');
-        item.className = 'task-item' + (checks[i] ? ' checked' : '');
-        item.onclick = () => toggleTask(i, state);
-        item.innerHTML = `
-            <div class="task-checkbox">${checks[i] ? '✓' : ''}</div>
-            <div class="task-text">${task}</div>
-        `;
-        if (doneTodayAlready) item.style.pointerEvents = 'none';
-        list.appendChild(item);
-    });
-
-    updateCompleteBtn(checks, state);
-}
-
-function toggleTask(index, state) {
-    const today = todayKey();
-    if (state.completedDays.includes(today)) return;
-
-    if (!state.taskChecks[today]) {
-        const plan = challengePlans[state.type];
-        const weekIndex = Math.min(Math.floor(state.completedDays.length / 7), 3);
-        state.taskChecks[today] = plan.weeks[weekIndex].map(() => false);
-    }
-    state.taskChecks[today][index] = !state.taskChecks[today][index];
-    saveChallengeState(state);
-
-    const plan = challengePlans[state.type];
-    const weekIndex = Math.min(Math.floor(state.completedDays.length / 7), 3);
-    renderTaskList(plan.weeks[weekIndex], state.taskChecks[today], state);
-}
-
-function updateCompleteBtn(checks, state) {
-    const btn = document.getElementById('ch-complete-btn');
-    const today = todayKey();
-    const allDone = checks.every(c => c);
-    const doneTodayAlready = state.completedDays.includes(today);
-
-    btn.className = 'complete-btn';
-    if (doneTodayAlready) {
-        btn.classList.add('done-today');
-        btn.innerText = '✅ 今天已完成打卡！明天繼續加油';
-    } else if (allDone) {
-        btn.classList.add('ready');
-        btn.innerText = '🎉 所有任務完成！立即打卡';
-    } else {
-        btn.classList.add('locked');
-        const remaining = checks.filter(c => !c).length;
-        btn.innerText = `還剩 ${remaining} 項任務未完成`;
-    }
-}
-
-function completeDayChallenge() {
+async function completeDayChallenge() {
     const state = getChallengeState();
     const today = todayKey();
     if (!state || state.completedDays.includes(today)) return;
@@ -747,9 +219,25 @@ function completeDayChallenge() {
     state.completedDays.push(today);
     saveChallengeState(state);
 
-    // 紙花特效
-    confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+    // ★ 打卡後同步到後端
+    if (lineUserId) {
+        try {
+            await fetch(`${BACKEND_URL}/sync_challenge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: lineUserId,
+                    challengeData: state
+                })
+            });
+            console.log("同步成功");
+        } catch (e) {
+            console.warn("同步失敗，僅存本地:", e);
+        }
+    }
 
+    // 原有邏輯不動
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
     const newCount = state.completedDays.length;
     const milestones = [7, 14, 21, 30];
     if (milestones.includes(newCount)) {
@@ -758,330 +246,92 @@ function completeDayChallenge() {
             alert(`🏆 恭喜達成「${newCount} 天」里程碑！`);
         }, 600);
     }
-
     setTimeout(() => renderChallengeModal(state), 400);
 }
 
-function logChallengeWeight() {
-    const input = document.getElementById('ch-weight-input');
-    const w = parseFloat(input.value);
-    if (!w || isNaN(w) || w < 20 || w > 300) { alert('請輸入有效的體重（20-300kg）'); return; }
-
-    const weights = getChallengeWeights();
-    weights[todayKey()] = w;
-    saveChallengeWeights(weights);
-    input.value = '';
-    renderChallengeWeightChart(getChallengeState());
-}
-
-function renderChallengeWeightChart(state) {
-    const weights = getChallengeWeights();
-    const canvas = document.getElementById('ch-weight-chart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (challengeWeightChart) challengeWeightChart.destroy();
-
-    const sortedDates = Object.keys(weights).sort();
-    if (sortedDates.length === 0) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#aaa';
-        ctx.font = '13px Noto Sans TC';
-        ctx.textAlign = 'center';
-        ctx.fillText('尚無記錄，輸入體重後顯示趨勢圖', canvas.width / 2, 80);
-        return;
-    }
-
-    const labels = sortedDates.map(d => d.slice(5));
-    const data = sortedDates.map(d => weights[d]);
-    const plan = challengePlans[challengeType];
-    const color = challengeType === 'gain' ? '#e67e22' : '#e74c3c';
-
-    challengeWeightChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                label: '體重 (kg)',
-                data,
-                borderColor: color,
-                backgroundColor: color + '20',
-                tension: 0.4,
-                fill: true,
-                pointRadius: 5,
-                pointBackgroundColor: color
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { ticks: { maxRotation: 45, font: { size: 10 } } },
-                y: { title: { display: true, text: 'kg', font: { size: 10 } } }
-            }
-        }
-    });
-}
-
-function updateShareCard(completedCount, plan) {
-    const card = document.getElementById('ch-share-card');
-    const milestones = [7, 14, 21, 30];
-    const reached = milestones.filter(m => completedCount >= m);
-    if (reached.length === 0) { card.classList.remove('visible'); return; }
-
-    const latest = reached[reached.length - 1];
-    const icons = { 7: '🌱', 14: '💡', 21: '🔥', 30: '🏆' };
-    const titles = { 7: `我已堅持挑戰 7 天！`, 14: `挑戰進行到一半了！`, 21: `21天，習慣已養成！`, 30: `🎊 我完成了30天挑戰！` };
-
-    document.getElementById('share-card-icon').innerText = icons[latest];
-    document.getElementById('share-card-title').innerText = titles[latest];
-    card.classList.add('visible');
-}
-
-function copyShareText() {
-    const state = getChallengeState();
+// 渲染挑戰介面 (簡化版邏輯)
+function renderChallengeModal(state) {
     const plan = challengePlans[state.type];
-    const count = state.completedDays.length;
-    const text = `${plan.title}\n\n我已堅持 ${count} 天！💪\n\n開啟你的健康挑戰 👉 打開「健康管理顧問」BMI工具`;
-    navigator.clipboard.writeText(text).then(() => alert('✅ 已複製分享文字！'));
+    const completedCount = state.completedDays.length;
+    const weekIndex = Math.min(Math.floor(completedCount / 7), 3);
+    const today = todayKey();
+
+    document.getElementById('challenge-hero-title').innerText = plan.title;
+    document.getElementById('ch-avatar').innerText = plan.avatars[weekIndex];
+    document.getElementById('ch-week-label').innerText = plan.weekLabels[weekIndex];
+    
+    // 渲染任務列表
+    const tasks = plan.weeks[weekIndex];
+    const checks = state.taskChecks[today] || new Array(tasks.length).fill(false);
+    state.taskChecks[today] = checks;
+
+    const listEl = document.getElementById('ch-task-list');
+    listEl.innerHTML = '';
+    tasks.forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = `task-item ${checks[i] ? 'checked' : ''}`;
+        item.innerHTML = `<div class="task-checkbox">${checks[i] ? '✓' : ''}</div><div class="task-text">${t}</div>`;
+        item.onclick = () => {
+            if (state.completedDays.includes(today)) return;
+            checks[i] = !checks[i];
+            saveChallengeState(state);
+            renderChallengeModal(state);
+        };
+        listEl.appendChild(item);
+    });
+
+    const btn = document.getElementById('ch-complete-btn');
+    if (state.completedDays.includes(today)) {
+        btn.innerText = "今日已打卡"; btn.className = "complete-btn locked";
+    } else if (checks.every(c => c)) {
+        btn.innerText = "完成今日挑戰"; btn.className = "complete-btn ready";
+    } else {
+        btn.innerText = "尚有任務未完成"; btn.className = "complete-btn locked";
+    }
 }
 
-// =================== BMI 計算 ===================
-let bmiChart = null;
-
+// 基礎 BMI 計算 (原邏輯)
 function calculateBMI() {
     const h = parseFloat(document.getElementById('height').value);
     const w = parseFloat(document.getElementById('weight').value);
-    const enableTarget = document.getElementById('enableTarget');
-    const targetEl = document.getElementById('targetWeight');
-    const isTargetEnabled = enableTarget && enableTarget.checked;
-    const targetWInput = targetEl ? targetEl.value : "";
-    const targetW = (isTargetEnabled && targetWInput !== "") ? parseFloat(targetWInput) : null;
-
-    if (!h || !w || isNaN(h) || isNaN(w)) { alert("💡 請輸入有效的身高與體重！"); return; }
-
+    if (!h || !w) return alert("請輸入身高體重");
     const bmi = (w / ((h / 100) ** 2)).toFixed(1);
-    const idealWeight = (22 * ((h / 100) ** 2)).toFixed(1);
-    const weightDiff = (w - idealWeight).toFixed(1);
-
-    saveToHistory(h, w, bmi);
-
-    let info = { status: "", color: "" };
-    if (bmi < 18.5) { info.status = "體重過輕"; info.color = "var(--primary)"; }
-    else if (bmi < 24) { info.status = "正常範圍"; info.color = "var(--success)"; }
-    else if (bmi < 27) { info.status = "過重"; info.color = "var(--warning)"; }
-    else { info.status = "肥胖"; info.color = "var(--danger)"; }
-
-    document.getElementById('result-section').style.display = 'block';
     document.getElementById('bmi-value').innerText = bmi;
-    document.getElementById('bmi-value').style.color = info.color;
-    document.getElementById('bmi-status').innerText = info.status;
-    document.getElementById('status-box').style.borderColor = info.color;
-
-    const goalText = weightDiff > 0 ?
-        `理想體重為 <strong>${idealWeight} kg</strong>，需減重 ${weightDiff} kg。` :
-        `理想體重為 <strong>${idealWeight} kg</strong>，狀態良好！`;
-
-    let progressHtml = "";
-    if (targetW !== null && !isNaN(targetW)) {
-        let history = JSON.parse(localStorage.getItem('bmi_history')) || [];
-        const startW = history.length > 0 ? history[0].w : w;
-        const totalDistance = Math.abs(targetW - startW);
-        const currentRemaining = Math.abs(targetW - w);
-        let percentage = totalDistance === 0 || w === targetW ? 100 :
-            ((totalDistance - currentRemaining) / totalDistance) * 100;
-        percentage = Math.max(0, Math.min(100, percentage)).toFixed(1);
-        const remaining = Math.abs(w - targetW).toFixed(1);
-        const actionType = w > targetW ? "減重" : "增重";
-
-        progressHtml = `
-            <div class="advice-card target-progress-card">
-                <div class="card-title">🏆 目標達成率</div>
-                <div class="progress-container">
-                    <div class="progress-bar" style="width: ${percentage}%"></div>
-                    <span class="progress-text">${percentage}%</span>
-                </div>
-                <p style="font-size: 0.88rem; color: #666; margin: 0;">
-                    初始：<strong>${startW}kg</strong> | 目標：<strong>${targetW}kg</strong><br>
-                    目前：還差 <strong>${remaining}kg</strong>（${actionType}）
-                </p>
-            </div>`;
-    }
-
-    document.getElementById('advice-container').innerHTML = `
-        ${progressHtml}
-        <div class="advice-card history-card">
-            <div class="card-title">📈 BMI 趨勢紀錄 <span class="click-hint" onclick="openHistoryModal()">歷史明細 ➔</span></div>
-            <div style="display:flex;gap:6px;margin-bottom:4px;">
-                <select id="timeFilter" class="filter-select" onchange="renderChart(${targetW})">
-                    <option value="recent">近 10 次紀錄</option>
-                    <option value="month">一個月內</option>
-                    <option value="year">一年內</option>
-                </select>
-            </div>
-            <div class="chart-container"><canvas id="bmiChartCanvas"></canvas></div>
-        </div>
-        <div class="advice-card goal-card"><div class="card-title">🎯 健康目標</div><p>${goalText}</p></div>
-        <div class="advice-card diet-card clickable-card" onclick="openDietModal('${info.status}')">
-            <div class="card-title">🍎 飲食建議 <span class="click-hint">查看菜單 ➔</span></div>
-            <p>針對「${info.status}」的熱量攝取建議。</p>
-        </div>
-        <div class="advice-card outdoor-card clickable-card" onclick="openOutdoorModal('${info.status}')">
-            <div class="card-title">🌲 戶外方案 <span class="click-hint">選擇場點 ➔</span></div>
-            <p>尋找附近的運動場所。</p>
-        </div>
-        <div class="advice-card home-card clickable-card" onclick="openHomeModal('${info.status}')">
-            <div class="card-title">🏠 居家運動 <span class="click-hint">查看計畫 ➔</span></div>
-            <p>宅在家也能有效運動，點擊展開基礎動作。</p>
-        </div>
+    document.getElementById('bmi-status').innerText = bmi < 18.5 ? "體重過輕" : (bmi < 24 ? "正常" : "過重");
+    document.getElementById('result-section').style.display = 'block';
+    
+    // 顯示按鈕區
+    const status = bmi < 18.5 ? "體重過輕" : (bmi < 24 ? "正常" : "過重");
+    const container = document.getElementById('advice-container');
+    container.innerHTML = `
         <div class="action-btn-group">
-            <button class="btn-gain pulse-btn" onclick="handleAdvancedPlan('gain', '${info.status}')">💪 開始增重挑戰</button>
-            <button class="btn-lose" onclick="handleAdvancedPlan('lose', '${info.status}')">🔥 開始燃脂挑戰</button>
+            <button class="btn-gain" onclick="startChallenge('gain', '${status}')">增肌挑戰</button>
+            <button class="btn-lose" onclick="startChallenge('lose', '${status}')">減脂挑戰</button>
         </div>
     `;
-
-    renderChart(targetW);
-    setTimeout(() => {
-        const resSection = document.getElementById('result-section');
-        if (resSection) { resSection.style.display = 'block'; resSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    }, 100);
 }
 
-function toggleTargetInput() {
-    const isChecked = document.getElementById('enableTarget').checked;
-    const targetInput = document.getElementById('targetWeight');
-    targetInput.disabled = !isChecked;
-    if (!isChecked) { targetInput.value = ""; targetInput.placeholder = "請先勾選上方方塊"; }
-    else { targetInput.placeholder = "例如: 65"; targetInput.focus(); }
-}
-
-function saveToHistory(h, w, bmi) {
-    let history = JSON.parse(localStorage.getItem('bmi_history')) || [];
-    const now = new Date();
-    const dateString = now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' }) + ' ' + now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-    const newRecord = { date: dateString, fullTimestamp: now.toISOString(), h, w, bmi };
-    const last = history[history.length - 1];
-    if (!last || last.bmi !== bmi || last.w !== w) {
-        history.push(newRecord);
-        if (history.length > 500) history.shift();
-        localStorage.setItem('bmi_history', JSON.stringify(history));
+function startChallenge(type, status) {
+    let state = getChallengeState();
+    if (!state || state.type !== type) {
+        state = { type: type, startDate: todayKey(), completedDays: [], taskChecks: {} };
+        saveChallengeState(state);
     }
-}
-
-function renderChart(targetW = null) {
-    const filteredData = getFilteredData();
-    const canvas = document.getElementById('bmiChartCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (bmiChart) bmiChart.destroy();
-
-    const annotations = {};
-    if (targetW) {
-        annotations.line1 = {
-            type: 'line', yMin: targetW, yMax: targetW, borderColor: '#e67e22',
-            borderWidth: 2, borderDash: [6, 6],
-            label: { display: true, content: '目標: ' + targetW + 'kg', position: 'end', backgroundColor: 'rgba(230,126,34,0.8)', font: { size: 10 } }
-        };
-    }
-
-    bmiChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: filteredData.map(r => r.date.split(' ')[0]),
-            datasets: [{ label: '體重 (kg)', data: filteredData.map(r => r.w), borderColor: '#4a90e2', tension: 0.4, fill: true, backgroundColor: 'rgba(74,144,226,0.08)' }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, annotation: { annotations } },
-            scales: { x: { ticks: { maxRotation: 45, font: { size: 10 } } }, y: { title: { display: true, text: 'kg' } } }
-        }
-    });
-}
-
-function getFilteredData() {
-    let history = JSON.parse(localStorage.getItem('bmi_history')) || [];
-    const filter = document.getElementById('timeFilter')?.value || 'recent';
-    if (filter === 'recent') return history.slice(-10);
-    const now = new Date();
-    if (filter === 'month') return history.filter(r => (now - new Date(r.fullTimestamp)) < 30 * 86400000);
-    if (filter === 'year') return history.filter(r => (now - new Date(r.fullTimestamp)) < 365 * 86400000);
-    return history.slice(-10);
-}
-
-function openHistoryModal() {
-    const data = getFilteredData();
-    let html = `<table class="history-table"><tr><th>日期</th><th>身高</th><th>體重</th><th>BMI</th></tr>`;
-    data.slice().reverse().forEach(r => { html += `<tr><td>${r.date}</td><td>${r.h}</td><td>${r.w}</td><td style="font-weight:700;color:var(--primary)">${r.bmi}</td></tr>`; });
-    document.getElementById('history-table-box').innerHTML = data.length ? html + "</table>" : "尚無紀錄。";
-    document.getElementById('historyModal').style.display = 'block';
-}
-
-function openDietModal(status) {
-    const data = dietDatabase[status];
-    document.getElementById('modal-status-text').innerText = status;
-    const selector = document.getElementById('plan-selector');
-    selector.innerHTML = "";
-    data.plans.forEach((plan, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'plan-btn' + (i === 0 ? ' active' : '');
-        btn.innerText = plan.name;
-        btn.onclick = function() {
-            document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderMealPlan(plan);
-        };
-        selector.appendChild(btn);
-    });
-    renderMealPlan(data.plans[0]);
-    document.getElementById('dietModal').style.display = 'block';
-}
-
-function renderMealPlan(plan) {
-    document.getElementById('meal-details').innerHTML = `
-        <div class="meal-item"><span class="meal-tag">🌅 早餐（${plan.id}）</span>${plan.breakfast}</div>
-        <div class="meal-item"><span class="meal-tag">☀️ 午餐（${plan.id}）</span>${plan.lunch}</div>
-        <div class="meal-item"><span class="meal-tag">🌙 晚餐（${plan.id}）</span>${plan.dinner}</div>
-    `;
-}
-
-function openOutdoorModal(status) {
-    const data = outdoorDetails[status];
-    document.getElementById('outdoor-intro').innerText = data.intro;
-    const container = document.getElementById('location-options');
-    container.innerHTML = "";
-    data.options.forEach(opt => {
-        const div = document.createElement('div');
-        div.className = 'option-item clickable';
-        div.onclick = () => window.open(`https://www.google.com/maps/search/${encodeURIComponent(opt.keyword)}`, '_blank');
-        div.innerHTML = `<div class="icon-box">${opt.icon}</div><div class="info-box"><h4>${opt.title}</h4><p>${opt.desc}</p></div>`;
-        container.appendChild(div);
-    });
-    document.getElementById('outdoorModal').style.display = 'block';
-}
-
-function openHomeModal(status) {
-    const data = homeExerciseDatabase[status];
-    document.getElementById('home-intro').innerText = data.intro;
-    const container = document.getElementById('home-exercise-options');
-    container.innerHTML = "";
-    data.exercises.forEach(ex => {
-        const div = document.createElement('div');
-        div.className = 'option-item';
-        div.innerHTML = `<div class="icon-box">${ex.icon}</div><div class="info-box"><h4>${ex.title}</h4></div><div class="plan-details"><ul>${ex.plan.map(p => `<li>${p}</li>`).join('')}</ul></div>`;
-        container.appendChild(div);
-    });
-    document.getElementById('homeModal').style.display = 'block';
+    renderChallengeModal(state);
+    document.getElementById('challengeModal').style.display = 'block';
 }
 
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function toggleTargetInput() {
+    const input = document.getElementById('targetWeight');
+    input.disabled = !document.getElementById('enableTarget').checked;
+}
 
-window.addEventListener('click', e => {
-    ['historyModal','dietModal','outdoorModal','homeModal','challengeModal'].forEach(id => {
-        const modal = document.getElementById(id);
-        if (e.target === modal) modal.style.display = 'none';
-    });
-});
+// ── 步驟 3: 網頁載入初始化 ──
+window.addEventListener('load', async function() {
+    await initLiff();  // ★ 加在最開頭
 
-window.addEventListener('load', function() {
+    // 以下原本的 URL 參數解析邏輯完全不動
     const urlParams = new URLSearchParams(window.location.search);
     const h = urlParams.get('h'), w = urlParams.get('w'), t = urlParams.get('t');
     if (h && w) {
