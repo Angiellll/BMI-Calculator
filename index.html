@@ -381,7 +381,12 @@
             <div class="challenge-hero-title" id="challenge-hero-title">💪 30天增肌增重挑戰</div>
             <div class="challenge-hero-sub" id="challenge-hero-sub">建立習慣，改變體態</div>
             <div class="challenge-overview">
-                <div class="avatar-display" id="ch-avatar">🧍</div>
+                <div>
+                    <div class="avatar-display" id="ch-avatar">🌱</div>
+                    <div style="color:white;font-size:0.75rem;text-align:center;margin-top:4px;" id="pet-info">
+                        Lv.1 小健苗
+                    </div>
+                </div>
                 <div class="overview-info">
                     <div class="overview-label">目前階段</div>
                     <div class="overview-value" id="ch-stage">新手上路</div>
@@ -550,6 +555,46 @@ const WEIGHT_LOG_KEY = 'bmi_challenge_weights';
 let challengeType = 'gain';
 let challengeWeightChart = null;
 
+// ===== 遊戲化：寵物系統 =====
+function getPetState(){
+    const raw = localStorage.getItem('pet_state');
+    if(!raw){
+        const init = {level:1,exp:0,form:"🌱"};
+        localStorage.setItem('pet_state',JSON.stringify(init));
+        return init;
+    }
+    return JSON.parse(raw);
+}
+
+function savePetState(pet){
+    localStorage.setItem('pet_state',JSON.stringify(pet));
+}
+
+function gainPetExp(amount=10){
+    let pet = getPetState();
+    pet.exp += amount;
+
+    if(pet.exp >= 50){
+        pet.level++;
+        pet.exp = 0;
+
+        if(pet.level === 2) pet.form = "🌿";
+        if(pet.level === 3) pet.form = "🌳";
+    }
+
+    savePetState(pet);
+    return pet;
+}
+
+function renderPet(){
+    const pet = getPetState();
+    const avatar = document.getElementById('ch-avatar');
+    const info = document.getElementById('pet-info');
+
+    if(avatar) avatar.innerText = pet.form;
+    if(info) info.innerText = `Lv.${pet.level} 小健苗`;
+}
+
 function getChallengeState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -597,6 +642,7 @@ function handleAdvancedPlan(type, currentStatus) {
 
     challengeType = type;
     renderChallengeModal(state);
+    renderPet();
     document.getElementById('challengeModal').style.display = 'block';
 }
 
@@ -621,7 +667,7 @@ function renderChallengeModal(state) {
     // Hero
     document.getElementById('challenge-hero-title').innerText = plan.title;
     document.getElementById('challenge-hero-sub').innerText = plan.sub;
-    document.getElementById('ch-avatar').innerText = plan.avatars[weekIndex];
+    renderPet();
     document.getElementById('ch-stage').innerText = plan.stages[weekIndex];
     document.getElementById('ch-streak').innerText = streak + ' 天';
     document.getElementById('ch-day-badge').innerText = 'DAY ' + (completedCount + 1);
@@ -735,6 +781,14 @@ function updateCompleteBtn(checks, state) {
 }
 
 function completeDayChallenge() {
+    const pet = gainPetExp(10);
+    renderPet();
+
+    // 收集徽章
+    let badges = JSON.parse(localStorage.getItem('badges') || '[]');
+    badges.push("🏅");
+    localStorage.setItem('badges', JSON.stringify(badges));
+
     const state = getChallengeState();
     const today = todayKey();
     if (!state || state.completedDays.includes(today)) return;
