@@ -95,6 +95,33 @@ def get_ai_advice(category):
         print(f"AI Error: {e}")
         return "服務稍忙，請稍後再試！"
 
+def build_pet_flex_message(user):
+    pet_name = user["pet"]
+    pet_icon = pet_name.split()[0] if pet_name else "🌱"
+
+    flex_content = {
+        "type": "bubble",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {"type": "text", "text": "我的小精靈", "weight": "bold", "size": "xl", "align": "center"},
+                {"type": "text", "text": pet_icon, "size": "5xl", "align": "center", "margin": "md"}
+            ]
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {"type": "text", "text": f"等級：{user['level']}", "size": "md", "weight": "bold"},
+                {"type": "text", "text": f"EXP：{user['exp']}/100", "size": "md", "margin": "sm"},
+                {"type": "text", "text": f"夥伴：{pet_name}", "size": "md", "margin": "sm"}
+            ]
+        }
+    }
+
+    return FlexSendMessage(alt_text="我的小精靈", contents=flex_content)
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_msg = event.message.text.strip()  # 取得使用者訊息
@@ -109,8 +136,7 @@ def handle_message(event):
     # 查詢狀態
     if user_msg == "我的精靈":
         user = users[user_id]
-        reply = f"等級：{user['level']}\nEXP：{user['exp']}/100\n夥伴：{user['pet']}"
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply))
+        line_bot_api.reply_message(event.reply_token, build_pet_flex_message(user))
         return
 
     # 運動指令（例：運動 30）
