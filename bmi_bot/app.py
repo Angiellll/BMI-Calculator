@@ -217,7 +217,14 @@ def handle_message(event):
                 "type": "box", "layout": "vertical", "contents": [
                     {"type": "separator", "margin": "md"},
                     {"type": "text", "text": "🎯 管理目標", "weight": "bold", "margin": "lg", "size": "md"},
-                    {"type": "text", "text": goal_text, "size": "sm", "color": "#666666", "wrap": True, "margin": "sm"}
+                    {"type": "text", "text": goal_text, "size": "sm", "color": "#666666", "wrap": True, "margin": "sm"},
+                    {"type": "text", "text": "🍎 飲食建議", "weight": "bold", "margin": "lg", "size": "md"},
+                    {"type": "text", "text": diet, "size": "sm", "color": "#666666", "wrap": True, "margin": "sm"},
+                    {"type": "text", "text": "🌲 運動方案", "weight": "bold", "margin": "lg", "size": "md"},
+                    {"type": "box", "layout": "vertical", "margin": "sm", "contents": [
+                        {"type": "text", "text": f"戶外：{outdoor}", "size": "sm", "color": "#666666", "wrap": True},
+                        {"type": "text", "text": f"室內：{home}", "size": "sm", "color": "#666666", "wrap": True, "margin": "xs"}
+                    ]}
                 ]
             },
             "footer": {

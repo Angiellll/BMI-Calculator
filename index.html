@@ -91,6 +91,12 @@
         }
         .bmi-number { font-size: 3.2rem; font-weight: 900; display: block; font-family: 'DM Mono', monospace; }
 
+        /* 台灣標準說明 */
+        .bmi-standard-note {
+            font-size: 0.72rem; color: var(--muted);
+            margin-top: 4px; display: block;
+        }
+
         .advice-card {
             background: #fff; padding: 1.2rem;
             margin-top: 1rem; border-radius: 12px;
@@ -116,9 +122,25 @@
         .goal-card { border-left: 5px solid #aaa; }
         .target-progress-card { border-left: 5px solid var(--target); }
 
+        /* 新手引導橫幅 */
+        .first-step-banner {
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border: 2px solid var(--warning);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .first-step-icon { font-size: 1.6rem; flex-shrink: 0; }
+        .first-step-text { font-size: 0.88rem; color: #78350f; }
+        .first-step-text strong { display: block; font-size: 0.95rem; margin-bottom: 3px; color: #92400e; }
+
         .action-btn-group { display: flex; gap: 10px; margin-top: 15px; }
         .btn-gain { background: linear-gradient(135deg, #e67e22, #d35400); flex: 1; padding: 13px; margin-top: 0; border-radius: 10px; font-size: 0.95rem; }
         .btn-lose { background: linear-gradient(135deg, #e74c3c, #c0392b); flex: 1; padding: 13px; margin-top: 0; border-radius: 10px; font-size: 0.95rem; }
+        .btn-full { width: 100%; margin-top: 0; border-radius: 10px; font-size: 0.95rem; }
         .btn-gain:hover { box-shadow: 0 6px 20px rgba(230,126,34,0.4); }
         .btn-lose:hover { box-shadow: 0 6px 20px rgba(231,76,60,0.4); }
         .pulse-btn { animation: pulse 2.5s infinite; }
@@ -273,6 +295,12 @@
         }
         .challenge-chart-container { width: 100%; height: 160px; }
 
+        /* localStorage 警告 */
+        .storage-warning {
+            font-size: 0.72rem; color: var(--muted);
+            text-align: center; margin-top: 10px;
+        }
+
         /* 里程碑 */
         .milestones { display: flex; gap: 8px; margin-top: 14px; }
         .milestone {
@@ -301,7 +329,7 @@
         .share-btn {
             width: 100%; margin-top: 0; padding: 10px;
             background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
-            border-radius: 0; font-size: 0.85rem; font-weight: 700;
+            font-size: 0.85rem; font-weight: 700;
             transition: background 0.2s; border-radius: 0 0 14px 14px;
         }
         .share-btn:hover { background: rgba(255,255,255,0.25); transform: none; box-shadow: none; }
@@ -357,6 +385,7 @@
         <div class="status-header" id="status-box">
             <span class="bmi-number" id="bmi-value">--</span>
             <p>您的健康狀態：<strong id="bmi-status">--</strong></p>
+            <span class="bmi-standard-note">* 依據衛福部國健署台灣成人 BMI 標準</span>
         </div>
         <div id="advice-container"></div>
         <div class="line-link">
@@ -372,10 +401,9 @@
 <div id="outdoorModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('outdoorModal')">×</span><h3 style="margin-top:0">🌲 選擇適合您的場點</h3><p id="outdoor-intro" style="font-size: 0.88rem; color: #666; margin-bottom: 8px;"></p><div id="location-options"></div></div></div>
 <div id="homeModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('homeModal')">×</span><h3 style="margin-top:0">🏠 專屬居家運動計畫</h3><p id="home-intro" style="font-size: 0.88rem; color: #666; margin-bottom: 8px;"></p><div id="home-exercise-options"></div></div></div>
 
-<!-- 30天挑戰 Modal（全新版） -->
+<!-- 30天挑戰 Modal -->
 <div id="challengeModal" class="modal">
     <div class="modal-content challenge-modal-content">
-        <!-- Hero -->
         <div class="challenge-hero">
             <span class="challenge-close" onclick="closeModal('challengeModal')">×</span>
             <div class="challenge-hero-title" id="challenge-hero-title">💪 30天增肌增重挑戰</div>
@@ -383,9 +411,7 @@
             <div class="challenge-overview">
                 <div>
                     <div class="avatar-display" id="ch-avatar">🌱</div>
-                    <div style="color:white;font-size:0.75rem;text-align:center;margin-top:4px;" id="pet-info">
-                        Lv.1 小健苗
-                    </div>
+                    <div style="color:white;font-size:0.75rem;text-align:center;margin-top:4px;" id="pet-info">Lv.1 小健苗</div>
                 </div>
                 <div class="overview-info">
                     <div class="overview-label">目前階段</div>
@@ -399,14 +425,10 @@
             </div>
         </div>
 
-        <!-- Body -->
         <div class="challenge-body">
-
-            <!-- 30天日曆 -->
             <div class="section-label">📅 打卡進度</div>
             <div class="calendar-grid" id="ch-calendar"></div>
 
-            <!-- 里程碑 -->
             <div class="section-label">🏆 里程碑</div>
             <div class="milestones" id="ch-milestones">
                 <div class="milestone" data-day="7"><span class="milestone-icon">🌱</span><div class="milestone-label">第7天</div></div>
@@ -415,16 +437,12 @@
                 <div class="milestone" data-day="30"><span class="milestone-icon">🏆</span><div class="milestone-label">完賽!</div></div>
             </div>
 
-            <!-- 今日任務 -->
             <div style="margin-top: 18px;">
                 <div class="week-badge"><span id="ch-week-label">第一週</span> · 今日任務</div>
                 <div class="task-list" id="ch-task-list"></div>
-                <button class="complete-btn locked" id="ch-complete-btn" onclick="completeDayChallenge()">
-                    尚有任務未完成
-                </button>
+                <button class="complete-btn locked" id="ch-complete-btn" onclick="completeDayChallenge()">尚有任務未完成</button>
             </div>
 
-            <!-- 體重記錄 -->
             <div class="weight-log-section">
                 <div class="weight-log-title">⚖️ 體重記錄（追蹤 30 天變化）</div>
                 <div class="weight-log-input">
@@ -432,9 +450,9 @@
                     <button onclick="logChallengeWeight()">記錄</button>
                 </div>
                 <div class="challenge-chart-container"><canvas id="ch-weight-chart"></canvas></div>
+                <p class="storage-warning">⚠️ 記錄儲存於此瀏覽器，換裝置或清除快取會遺失資料</p>
             </div>
 
-            <!-- 分享卡 -->
             <div class="share-card" id="ch-share-card">
                 <div class="share-card-inner">
                     <div style="font-size: 2rem; margin-bottom: 8px;" id="share-card-icon">🌱</div>
@@ -518,12 +536,19 @@ const homeExerciseDatabase = {
     ]}
 };
 
+// =================== 新手引導設定 ===================
+const firstStepGuide = {
+    "體重過輕": { icon: "💪", title: "✨ 給你的第一步建議", msg: "你目前體重過輕，最適合從「每天做 3 組深蹲」開始，搭配每餐多補充一份蛋白質。點下方按鈕開啟 30 天增肌挑戰！" },
+    "正常範圍": { icon: "🎯", title: "✨ 給你的第一步建議", msg: "你目前體重正常，可以選擇「增肌」或「維持體態」，每週 3 次 30 分鐘有氧是最好的起點。" },
+    "過重":     { icon: "🔥", title: "✨ 給你的第一步建議", msg: "你目前過重，最適合從「每天快走 20 分鐘」開始，低衝擊不傷膝蓋，搭配少喝含糖飲料效果最明顯！" },
+    "肥胖":     { icon: "🏊", title: "✨ 給你的第一步建議", msg: "你目前為肥胖，首要保護關節，最推薦「游泳」或「原地超慢跑」。點下方按鈕開啟 30 天燃脂挑戰！" }
+};
+
 // =================== 30天挑戰資料 ===================
 const challengePlans = {
     gain: {
         title: "💪 30天增肌增重挑戰",
         sub: "科學化增重，打造強壯體態",
-        avatars: ["🧍","💪","🏋️","🦍"],
         stages: ["新手上路","基礎建立","強化衝刺","終極挑戰者"],
         weekLabels: ["第一週：基礎適應","第二週：肌力建構","第三週：負荷強化","第四週：成果驗收"],
         weeks: [
@@ -537,7 +562,6 @@ const challengePlans = {
     lose: {
         title: "🔥 30天燃脂瘦身挑戰",
         sub: "健康減脂，不節食不挨餓",
-        avatars: ["🍕","🥗","🏃","✨"],
         stages: ["準備出發","習慣改變","燃脂爆發","脫胎換骨"],
         weekLabels: ["第一週：代謝喚醒","第二週：主動燃脂","第三週：體能突破","第四週：體質鞏固"],
         weeks: [
@@ -555,44 +579,40 @@ const WEIGHT_LOG_KEY = 'bmi_challenge_weights';
 let challengeType = 'gain';
 let challengeWeightChart = null;
 
-// ===== 遊戲化：寵物系統 =====
-function getPetState(){
+// ===== 寵物系統 =====
+function getPetState() {
     const raw = localStorage.getItem('pet_state');
-    if(!raw){
-        const init = {level:1,exp:0,form:"🌱"};
-        localStorage.setItem('pet_state',JSON.stringify(init));
+    if (!raw) {
+        const init = { level: 1, exp: 0, form: "🌱" };
+        localStorage.setItem('pet_state', JSON.stringify(init));
         return init;
     }
     return JSON.parse(raw);
 }
 
-function savePetState(pet){
-    localStorage.setItem('pet_state',JSON.stringify(pet));
+function savePetState(pet) {
+    localStorage.setItem('pet_state', JSON.stringify(pet));
 }
 
-function gainPetExp(amount=10){
+function gainPetExp(amount = 10) {
     let pet = getPetState();
     pet.exp += amount;
-
-    if(pet.exp >= 50){
+    if (pet.exp >= 50) {
         pet.level++;
         pet.exp = 0;
-
-        if(pet.level === 2) pet.form = "🌿";
-        if(pet.level === 3) pet.form = "🌳";
+        if (pet.level === 2) pet.form = "🌿";
+        if (pet.level === 3) pet.form = "🌳";
     }
-
     savePetState(pet);
     return pet;
 }
 
-function renderPet(){
+function renderPet() {
     const pet = getPetState();
     const avatar = document.getElementById('ch-avatar');
     const info = document.getElementById('pet-info');
-
-    if(avatar) avatar.innerText = pet.form;
-    if(info) info.innerText = `Lv.${pet.level} 小健苗`;
+    if (avatar) avatar.innerText = pet.form;
+    if (info) info.innerText = `Lv.${pet.level} 小健苗`;
 }
 
 function getChallengeState() {
@@ -619,27 +639,18 @@ function todayKey() {
     return new Date().toISOString().slice(0, 10);
 }
 
-// =================== 開啟挑戰 ===================
-function handleAdvancedPlan(type, currentStatus) {
-    if (type === 'gain' && (currentStatus === '肥胖' || currentStatus === '過重')) {
-        if (!confirm("⚠️ 系統偵測到您目前狀態為「" + currentStatus + "」，增重可能不適合您，確定要查看嗎？")) return;
-    }
-    if (type === 'lose' && currentStatus === '體重過輕') {
-        if (!confirm("⚠️ 系統偵測到您目前狀態為「體重過輕」，繼續減肥可能損害健康，確定要查看嗎？")) return;
-    }
-
-    // 若無紀錄或類型不同，初始化
+// =================== 開啟挑戰（已移除 confirm 警告） ===================
+function handleAdvancedPlan(type) {
     let state = getChallengeState();
     if (!state || state.type !== type) {
         state = {
             type: type,
             startDate: todayKey(),
-            completedDays: [],       // 已完成日期 array
-            taskChecks: {}            // { 'YYYY-MM-DD': [true, false, true] }
+            completedDays: [],
+            taskChecks: {}
         };
         saveChallengeState(state);
     }
-
     challengeType = type;
     renderChallengeModal(state);
     renderPet();
@@ -651,7 +662,6 @@ function renderChallengeModal(state) {
     const completedCount = state.completedDays.length;
     const weekIndex = Math.min(Math.floor(completedCount / 7), 3);
     const today = todayKey();
-    const doneTodayAlready = state.completedDays.includes(today);
 
     // 連續打卡計算
     let streak = 0;
@@ -664,7 +674,6 @@ function renderChallengeModal(state) {
         } else break;
     }
 
-    // Hero
     document.getElementById('challenge-hero-title').innerText = plan.title;
     document.getElementById('challenge-hero-sub').innerText = plan.sub;
     renderPet();
@@ -672,27 +681,21 @@ function renderChallengeModal(state) {
     document.getElementById('ch-streak').innerText = streak + ' 天';
     document.getElementById('ch-day-badge').innerText = 'DAY ' + (completedCount + 1);
 
-    // 日曆
     renderCalendar(state);
 
-    // 里程碑
     const milestones = document.querySelectorAll('.milestone');
     milestones.forEach(m => {
         const day = parseInt(m.dataset.day);
         m.classList.toggle('unlocked', completedCount >= day);
-        m.querySelector('.milestone-label').innerText = plan.milestones[[7,14,21,30].indexOf(day)];
+        m.querySelector('.milestone-label').innerText = plan.milestones[[7, 14, 21, 30].indexOf(day)];
     });
 
-    // 本週任務
     document.getElementById('ch-week-label').innerText = plan.weekLabels[weekIndex];
     const tasks = plan.weeks[weekIndex];
     const todayChecks = (state.taskChecks[today] || tasks.map(() => false));
     renderTaskList(tasks, todayChecks, state);
 
-    // 分享卡
     updateShareCard(completedCount, plan);
-
-    // 體重圖表
     renderChallengeWeightChart(state);
 }
 
@@ -700,10 +703,8 @@ function renderCalendar(state) {
     const grid = document.getElementById('ch-calendar');
     grid.innerHTML = '';
     const today = todayKey();
-    const plan = challengePlans[state.type];
 
     for (let i = 1; i <= 30; i++) {
-        // 計算這格對應的日期
         const d = new Date(state.startDate);
         d.setDate(d.getDate() + i - 1);
         const dk = d.toISOString().slice(0, 10);
@@ -781,14 +782,6 @@ function updateCompleteBtn(checks, state) {
 }
 
 function completeDayChallenge() {
-    const pet = gainPetExp(10);
-    renderPet();
-
-    // 收集徽章
-    let badges = JSON.parse(localStorage.getItem('badges') || '[]');
-    badges.push("🏅");
-    localStorage.setItem('badges', JSON.stringify(badges));
-
     const state = getChallengeState();
     const today = todayKey();
     if (!state || state.completedDays.includes(today)) return;
@@ -798,10 +791,16 @@ function completeDayChallenge() {
     const allDone = checks.every(c => c) && checks.length > 0;
     if (!allDone) return;
 
+    gainPetExp(10);
+    renderPet();
+
+    let badges = JSON.parse(localStorage.getItem('badges') || '[]');
+    badges.push("🏅");
+    localStorage.setItem('badges', JSON.stringify(badges));
+
     state.completedDays.push(today);
     saveChallengeState(state);
 
-    // 紙花特效
     confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
 
     const newCount = state.completedDays.length;
@@ -847,7 +846,6 @@ function renderChallengeWeightChart(state) {
 
     const labels = sortedDates.map(d => d.slice(5));
     const data = sortedDates.map(d => weights[d]);
-    const plan = challengePlans[challengeType];
     const color = challengeType === 'gain' ? '#e67e22' : '#e74c3c';
 
     challengeWeightChart = new Chart(ctx, {
@@ -920,10 +918,10 @@ function calculateBMI() {
     saveToHistory(h, w, bmi);
 
     let info = { status: "", color: "" };
-    if (bmi < 18.5) { info.status = "體重過輕"; info.color = "var(--primary)"; }
-    else if (bmi < 24) { info.status = "正常範圍"; info.color = "var(--success)"; }
-    else if (bmi < 27) { info.status = "過重"; info.color = "var(--warning)"; }
-    else { info.status = "肥胖"; info.color = "var(--danger)"; }
+    if (bmi < 18.5)      { info.status = "體重過輕"; info.color = "var(--primary)"; }
+    else if (bmi < 24)   { info.status = "正常範圍"; info.color = "var(--success)"; }
+    else if (bmi < 27)   { info.status = "過重";     info.color = "var(--warning)"; }
+    else                 { info.status = "肥胖";     info.color = "var(--danger)"; }
 
     document.getElementById('result-section').style.display = 'block';
     document.getElementById('bmi-value').innerText = bmi;
@@ -931,18 +929,19 @@ function calculateBMI() {
     document.getElementById('bmi-status').innerText = info.status;
     document.getElementById('status-box').style.borderColor = info.color;
 
-    const goalText = weightDiff > 0 ?
-        `理想體重為 <strong>${idealWeight} kg</strong>，需減重 ${weightDiff} kg。` :
-        `理想體重為 <strong>${idealWeight} kg</strong>，狀態良好！`;
+    const goalText = weightDiff > 0
+        ? `理想體重為 <strong>${idealWeight} kg</strong>，需減重 ${weightDiff} kg。`
+        : `理想體重為 <strong>${idealWeight} kg</strong>，狀態良好！`;
 
+    // ── 目標進度 ──
     let progressHtml = "";
     if (targetW !== null && !isNaN(targetW)) {
         let history = JSON.parse(localStorage.getItem('bmi_history')) || [];
         const startW = history.length > 0 ? history[0].w : w;
         const totalDistance = Math.abs(targetW - startW);
         const currentRemaining = Math.abs(targetW - w);
-        let percentage = totalDistance === 0 || w === targetW ? 100 :
-            ((totalDistance - currentRemaining) / totalDistance) * 100;
+        let percentage = totalDistance === 0 || w === targetW ? 100
+            : ((totalDistance - currentRemaining) / totalDistance) * 100;
         percentage = Math.max(0, Math.min(100, percentage)).toFixed(1);
         const remaining = Math.abs(w - targetW).toFixed(1);
         const actionType = w > targetW ? "減重" : "增重";
@@ -961,8 +960,40 @@ function calculateBMI() {
             </div>`;
     }
 
+    // ── 新手引導橫幅 ──
+    const guide = firstStepGuide[info.status];
+    const firstStepHtml = `
+        <div class="first-step-banner">
+            <div class="first-step-icon">${guide.icon}</div>
+            <div class="first-step-text">
+                <strong>${guide.title}</strong>
+                ${guide.msg}
+            </div>
+        </div>`;
+
+    // ── 挑戰按鈕邏輯：根據 BMI 狀態只顯示對應挑戰 ──
+    let challengeBtnHtml = "";
+    if (info.status === "體重過輕") {
+        challengeBtnHtml = `
+            <button class="btn-gain btn-full pulse-btn" onclick="handleAdvancedPlan('gain')">
+                💪 開始 30 天增肌增重挑戰
+            </button>`;
+    } else if (info.status === "正常範圍") {
+        challengeBtnHtml = `
+            <button class="btn-gain" onclick="handleAdvancedPlan('gain')">💪 增肌挑戰</button>
+            <button class="btn-lose" onclick="handleAdvancedPlan('lose')">🔥 維持體態挑戰</button>`;
+    } else {
+        // 過重 / 肥胖
+        challengeBtnHtml = `
+            <button class="btn-lose btn-full pulse-btn" onclick="handleAdvancedPlan('lose')">
+                🔥 開始 30 天燃脂瘦身挑戰
+            </button>`;
+    }
+
+    // ── 組合所有卡片 ──
     document.getElementById('advice-container').innerHTML = `
         ${progressHtml}
+        ${firstStepHtml}
         <div class="advice-card history-card">
             <div class="card-title">📈 BMI 趨勢紀錄 <span class="click-hint" onclick="openHistoryModal()">歷史明細 ➔</span></div>
             <div style="display:flex;gap:6px;margin-bottom:4px;">
@@ -988,15 +1019,17 @@ function calculateBMI() {
             <p>宅在家也能有效運動，點擊展開基礎動作。</p>
         </div>
         <div class="action-btn-group">
-            <button class="btn-gain pulse-btn" onclick="handleAdvancedPlan('gain', '${info.status}')">💪 開始增重挑戰</button>
-            <button class="btn-lose" onclick="handleAdvancedPlan('lose', '${info.status}')">🔥 開始燃脂挑戰</button>
+            ${challengeBtnHtml}
         </div>
     `;
 
     renderChart(targetW);
     setTimeout(() => {
         const resSection = document.getElementById('result-section');
-        if (resSection) { resSection.style.display = 'block'; resSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        if (resSection) {
+            resSection.style.display = 'block';
+            resSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }, 100);
 }
 
@@ -1011,7 +1044,8 @@ function toggleTargetInput() {
 function saveToHistory(h, w, bmi) {
     let history = JSON.parse(localStorage.getItem('bmi_history')) || [];
     const now = new Date();
-    const dateString = now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' }) + ' ' + now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+    const dateString = now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' })
+        + ' ' + now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
     const newRecord = { date: dateString, fullTimestamp: now.toISOString(), h, w, bmi };
     const last = history[history.length - 1];
     if (!last || last.bmi !== bmi || last.w !== w) {
@@ -1057,14 +1091,16 @@ function getFilteredData() {
     if (filter === 'recent') return history.slice(-10);
     const now = new Date();
     if (filter === 'month') return history.filter(r => (now - new Date(r.fullTimestamp)) < 30 * 86400000);
-    if (filter === 'year') return history.filter(r => (now - new Date(r.fullTimestamp)) < 365 * 86400000);
+    if (filter === 'year')  return history.filter(r => (now - new Date(r.fullTimestamp)) < 365 * 86400000);
     return history.slice(-10);
 }
 
 function openHistoryModal() {
     const data = getFilteredData();
     let html = `<table class="history-table"><tr><th>日期</th><th>身高</th><th>體重</th><th>BMI</th></tr>`;
-    data.slice().reverse().forEach(r => { html += `<tr><td>${r.date}</td><td>${r.h}</td><td>${r.w}</td><td style="font-weight:700;color:var(--primary)">${r.bmi}</td></tr>`; });
+    data.slice().reverse().forEach(r => {
+        html += `<tr><td>${r.date}</td><td>${r.h}</td><td>${r.w}</td><td style="font-weight:700;color:var(--primary)">${r.bmi}</td></tr>`;
+    });
     document.getElementById('history-table-box').innerHTML = data.length ? html + "</table>" : "尚無紀錄。";
     document.getElementById('historyModal').style.display = 'block';
 }
@@ -1078,7 +1114,7 @@ function openDietModal(status) {
         const btn = document.createElement('button');
         btn.className = 'plan-btn' + (i === 0 ? ' active' : '');
         btn.innerText = plan.name;
-        btn.onclick = function() {
+        btn.onclick = function () {
             document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             renderMealPlan(plan);
@@ -1129,13 +1165,13 @@ function openHomeModal(status) {
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 window.addEventListener('click', e => {
-    ['historyModal','dietModal','outdoorModal','homeModal','challengeModal'].forEach(id => {
+    ['historyModal', 'dietModal', 'outdoorModal', 'homeModal', 'challengeModal'].forEach(id => {
         const modal = document.getElementById(id);
         if (e.target === modal) modal.style.display = 'none';
     });
 });
 
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
     const urlParams = new URLSearchParams(window.location.search);
     const h = urlParams.get('h'), w = urlParams.get('w'), t = urlParams.get('t');
     if (h && w) {
