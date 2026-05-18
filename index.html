@@ -91,7 +91,6 @@
         }
         .bmi-number { font-size: 3.2rem; font-weight: 900; display: block; font-family: 'DM Mono', monospace; }
 
-        /* 台灣標準說明 */
         .bmi-standard-note {
             font-size: 0.72rem; color: var(--muted);
             margin-top: 4px; display: block;
@@ -122,7 +121,6 @@
         .goal-card { border-left: 5px solid #aaa; }
         .target-progress-card { border-left: 5px solid var(--target); }
 
-        /* 新手引導橫幅 */
         .first-step-banner {
             background: linear-gradient(135deg, #fffbeb, #fef3c7);
             border: 2px solid var(--warning);
@@ -161,7 +159,6 @@
         /* ===================== 30天挑戰 新版樣式 ===================== */
         .challenge-modal-content { max-width: 540px; padding: 0; overflow-y: auto; max-height: 88vh; }
 
-        /* 頂部 Hero */
         .challenge-hero {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             padding: 28px 28px 20px;
@@ -181,7 +178,6 @@
         .challenge-close { position: absolute; right: 18px; top: 18px; color: rgba(255,255,255,0.6); font-size: 24px; cursor: pointer; z-index: 10; }
         .challenge-close:hover { color: #fff; }
 
-        /* 進度總覽 */
         .challenge-overview {
             display: flex; align-items: center; gap: 16px;
             background: rgba(255,255,255,0.08);
@@ -193,10 +189,8 @@
         .overview-value { color: #fff; font-weight: 700; font-size: 1rem; margin-top: 2px; }
         .overview-streak { background: linear-gradient(135deg, var(--warning), #f39c12); color: #000; font-weight: 900; font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; }
 
-        /* 主體 */
         .challenge-body { padding: 20px 24px 24px; }
 
-        /* 日曆打卡 */
         .section-label {
             font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px;
@@ -226,7 +220,6 @@
         }
         .cal-day.future { opacity: 0.4; }
 
-        /* 本週任務 */
         .week-badge {
             display: inline-flex; align-items: center; gap: 6px;
             background: linear-gradient(135deg, var(--primary), #357abd);
@@ -253,7 +246,6 @@
         .task-text { font-size: 0.9rem; font-weight: 500; color: var(--text); }
         .task-item.checked .task-text { text-decoration: line-through; color: var(--muted); }
 
-        /* 完成按鈕 */
         .complete-btn {
             width: 100%; padding: 15px;
             border-radius: 12px; font-size: 1rem;
@@ -275,7 +267,6 @@
             color: white; cursor: not-allowed;
         }
 
-        /* 體重記錄 */
         .weight-log-section {
             background: #f8f9fa; border-radius: 12px;
             padding: 14px; margin-top: 16px;
@@ -294,13 +285,11 @@
         }
         .challenge-chart-container { width: 100%; height: 160px; }
 
-        /* localStorage 警告 */
         .storage-warning {
             font-size: 0.72rem; color: var(--muted);
             text-align: center; margin-top: 10px;
         }
 
-        /* 里程碑 */
         .milestones { display: flex; gap: 8px; margin-top: 14px; }
         .milestone {
             flex: 1; background: #f8f9fa; border-radius: 10px;
@@ -313,7 +302,6 @@
         .milestone-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); }
         .milestone.unlocked .milestone-label { color: #92400e; }
 
-        /* 分享卡 */
         .share-card {
             margin-top: 16px; border-radius: 14px; overflow: hidden;
             border: 1px solid var(--border); display: none;
@@ -333,7 +321,6 @@
         }
         .share-btn:hover { background: rgba(255,255,255,0.25); transform: none; box-shadow: none; }
 
-        /* 其他彈窗 */
         .option-item { background: #f9f9f9; padding: 14px; border-radius: 10px; margin-top: 10px; border: 1px solid #eee; display: flex; align-items: center; }
         .option-item.clickable:hover { background: white; border-color: var(--outdoor); transform: translateX(4px); cursor: pointer; }
         #homeModal .option-item { border-left: 4px solid var(--home); flex-direction: column; align-items: flex-start; }
@@ -356,6 +343,74 @@
         .history-table th { background: #f8f9fa; color: #666; }
 
         .line-link { margin-top: 1rem; padding: 1rem; background: #e8f4fd; border-radius: 10px; text-align: center; border: 1px dashed var(--primary); }
+
+        /* ===================== 挑戰選擇確認視窗 ===================== */
+        #challenge-confirm-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(6px);
+            align-items: center;
+            justify-content: center;
+        }
+        #challenge-confirm-overlay.active {
+            display: flex;
+        }
+        .confirm-box {
+            background: white;
+            border-radius: 24px;
+            padding: 32px 28px 28px;
+            max-width: 320px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+            animation: confirmPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes confirmPop {
+            from { transform: scale(0.85) translateY(20px); opacity: 0; }
+            to   { transform: scale(1) translateY(0);      opacity: 1; }
+        }
+        .confirm-icon { font-size: 2.6rem; margin-bottom: 12px; display: block; }
+        .confirm-title {
+            font-weight: 900; font-size: 1.1rem; color: #1a1a2e;
+            margin-bottom: 8px; line-height: 1.4;
+        }
+        .confirm-desc {
+            font-size: 0.82rem; color: #888;
+            margin-bottom: 22px; line-height: 1.55;
+        }
+        .confirm-btns { display: flex; gap: 10px; }
+        .confirm-cancel-btn {
+            flex: 1; padding: 12px; background: #f0f0f0; color: #666;
+            border: none; border-radius: 12px; font-size: 0.9rem;
+            font-weight: 700; cursor: pointer; font-family: inherit;
+            margin-top: 0; transition: background 0.2s;
+        }
+        .confirm-cancel-btn:hover { background: #e0e0e0; transform: none; box-shadow: none; }
+        .confirm-ok-btn {
+            flex: 1; padding: 12px;
+            border: none; border-radius: 12px; font-size: 0.9rem;
+            font-weight: 700; cursor: pointer; font-family: inherit;
+            margin-top: 0; color: white;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        .confirm-ok-btn:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.15); }
+        .confirm-ok-btn.gain-ok {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+        }
+        .confirm-ok-btn.lose-ok {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        /* 已鎖定按鈕樣式 */
+        .btn-locked-hint {
+            flex: 1; padding: 13px; margin-top: 0; border-radius: 10px;
+            font-size: 0.82rem; font-weight: 700; font-family: inherit;
+            background: #e8e8e8; color: #aaa; border: none; cursor: not-allowed;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -408,7 +463,6 @@
             <div class="challenge-hero-title" id="challenge-hero-title">💪 30天增肌增重挑戰</div>
             <div class="challenge-hero-sub" id="challenge-hero-sub">建立習慣，改變體態</div>
             <div class="challenge-overview">
-
                 <div class="overview-info">
                     <div class="overview-label">目前階段</div>
                     <div class="overview-value" id="ch-stage">新手上路</div>
@@ -457,6 +511,22 @@
                 </div>
                 <button class="share-btn" onclick="copyShareText()">📋 複製分享文字</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== 挑戰選擇確認視窗 ===================== -->
+<div id="challenge-confirm-overlay">
+    <div class="confirm-box">
+        <span class="confirm-icon" id="confirm-icon">🎯</span>
+        <div class="confirm-title" id="confirm-title">確定選擇這個挑戰？</div>
+        <p class="confirm-desc">
+            一旦開始，另一個挑戰將會隱藏。<br>
+            選定後請全力以赴，你做得到的！💪
+        </p>
+        <div class="confirm-btns">
+            <button class="confirm-cancel-btn" onclick="closeConfirmOverlay()">再想想</button>
+            <button class="confirm-ok-btn" id="confirm-ok-btn" onclick="confirmChallengeChoice()">確定開始！</button>
         </div>
     </div>
 </div>
@@ -532,7 +602,6 @@ const homeExerciseDatabase = {
     ]}
 };
 
-// =================== 新手引導設定 ===================
 const firstStepGuide = {
     "體重過輕": { icon: "💪", title: "✨ 給你的第一步建議", msg: "你目前體重過輕，最適合從「每天做 3 組深蹲」開始，搭配每餐多補充一份蛋白質。點下方按鈕開啟 30 天增肌挑戰！" },
     "正常範圍": { icon: "🎯", title: "✨ 給你的第一步建議", msg: "你目前體重正常，可以選擇「增肌」或「維持體態」，每週 3 次 30 分鐘有氧是最好的起點。" },
@@ -572,9 +641,128 @@ const challengePlans = {
 
 const STORAGE_KEY = 'bmi_challenge_v2';
 const WEIGHT_LOG_KEY = 'bmi_challenge_weights';
+const CHALLENGE_CHOICE_KEY = 'bmi_challenge_normal_choice'; // 儲存正常範圍用戶的挑戰選擇
+
 let challengeType = 'gain';
 let challengeWeightChart = null;
+let pendingChallengeType = null; // 等待確認的挑戰類型
 
+// =================== 挑戰選擇 localStorage ===================
+function getChallengeChoice() {
+    return localStorage.getItem(CHALLENGE_CHOICE_KEY);
+}
+
+function saveChallengeChoice(type) {
+    localStorage.setItem(CHALLENGE_CHOICE_KEY, type);
+}
+
+// =================== 確認視窗 ===================
+function showChallengeConfirm(type) {
+    pendingChallengeType = type;
+    const overlay = document.getElementById('challenge-confirm-overlay');
+    const titleEl = document.getElementById('confirm-title');
+    const iconEl  = document.getElementById('confirm-icon');
+    const okBtn   = document.getElementById('confirm-ok-btn');
+
+    if (type === 'gain') {
+        iconEl.innerText  = '💪';
+        titleEl.innerText = '確定選擇「增肌挑戰」？';
+        okBtn.className   = 'confirm-ok-btn gain-ok';
+    } else {
+        iconEl.innerText  = '🔥';
+        titleEl.innerText = '確定選擇「維持體態燃脂挑戰」？';
+        okBtn.className   = 'confirm-ok-btn lose-ok';
+    }
+
+    overlay.classList.add('active');
+}
+
+function closeConfirmOverlay() {
+    document.getElementById('challenge-confirm-overlay').classList.remove('active');
+    pendingChallengeType = null;
+}
+
+function confirmChallengeChoice() {
+    if (!pendingChallengeType) return;
+    const chosenType = pendingChallengeType;
+
+    // 儲存選擇
+    saveChallengeChoice(chosenType);
+
+    // 關閉確認視窗
+    closeConfirmOverlay();
+
+    // 隱藏另一個按鈕
+    lockOtherChallengeBtn(chosenType);
+
+    // 開啟挑戰
+    openChallenge(chosenType);
+}
+
+// 隱藏另一個挑戰按鈕，並顯示已鎖定提示
+function lockOtherChallengeBtn(chosenType) {
+    const gainBtn = document.querySelector('.btn-gain');
+    const loseBtn = document.querySelector('.btn-lose');
+
+    if (chosenType === 'gain' && loseBtn) {
+        loseBtn.style.display = 'none';
+        // 若有佔位提示元素則顯示
+        const hint = document.getElementById('locked-challenge-hint');
+        if (hint) hint.style.display = 'block';
+    }
+    if (chosenType === 'lose' && gainBtn) {
+        gainBtn.style.display = 'none';
+        const hint = document.getElementById('locked-challenge-hint');
+        if (hint) hint.style.display = 'block';
+    }
+}
+
+// =================== 挑戰入口（整合確認邏輯） ===================
+function handleAdvancedPlan(type) {
+    const existingChoice = getChallengeChoice();
+
+    // 若已有選擇，且點的就是已選的，直接開啟
+    if (existingChoice) {
+        if (existingChoice === type) {
+            openChallenge(type);
+        }
+        // 若嘗試開啟已隱藏的另一個（理論上按鈕已不可見，防呆用）
+        return;
+    }
+
+    // 尚未選擇：判斷是否為「正常範圍」（同時存在兩個按鈕）的情況
+    const gainBtn = document.querySelector('.btn-gain');
+    const loseBtn = document.querySelector('.btn-lose');
+    const isBothVisible = gainBtn && loseBtn &&
+        gainBtn.style.display !== 'none' &&
+        loseBtn.style.display !== 'none';
+
+    if (isBothVisible) {
+        // 正常範圍 → 需要確認
+        showChallengeConfirm(type);
+    } else {
+        // 非正常範圍（只有一個按鈕）→ 直接開啟
+        openChallenge(type);
+    }
+}
+
+function openChallenge(type) {
+    let state = getChallengeState();
+    if (!state || state.type !== type) {
+        state = {
+            type: type,
+            startDate: todayKey(),
+            completedDays: [],
+            taskChecks: {}
+        };
+        saveChallengeState(state);
+    }
+    challengeType = type;
+    renderChallengeModal(state);
+    document.getElementById('challengeModal').style.display = 'block';
+}
+
+// =================== Challenge State ===================
 function getChallengeState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -599,30 +787,12 @@ function todayKey() {
     return new Date().toISOString().slice(0, 10);
 }
 
-// =================== 開啟挑戰（已移除 confirm 警告） ===================
-function handleAdvancedPlan(type) {
-    let state = getChallengeState();
-    if (!state || state.type !== type) {
-        state = {
-            type: type,
-            startDate: todayKey(),
-            completedDays: [],
-            taskChecks: {}
-        };
-        saveChallengeState(state);
-    }
-    challengeType = type;
-    renderChallengeModal(state);
-    document.getElementById('challengeModal').style.display = 'block';
-}
-
 function renderChallengeModal(state) {
     const plan = challengePlans[state.type];
     const completedCount = state.completedDays.length;
     const weekIndex = Math.min(Math.floor(completedCount / 7), 3);
     const today = todayKey();
 
-    // 連續打卡計算
     let streak = 0;
     let checkDate = new Date(today);
     while (true) {
@@ -748,7 +918,6 @@ function completeDayChallenge() {
     const checks = state.taskChecks[today] || [];
     const allDone = checks.every(c => c) && checks.length > 0;
     if (!allDone) return;
-
 
     state.completedDays.push(today);
     saveChallengeState(state);
@@ -881,7 +1050,6 @@ function calculateBMI() {
     document.getElementById('bmi-status').innerText = info.status;
     document.getElementById('status-box').style.borderColor = info.color;
 
-    // 把 BMI 狀態同步到 AI 對話框
     updateChatBmiContext(info.status, bmi, idealWeight);
 
     const goalText = weightDiff > 0
@@ -926,17 +1094,33 @@ function calculateBMI() {
             </div>
         </div>`;
 
-    // ── 挑戰按鈕邏輯：根據 BMI 狀態只顯示對應挑戰 ──
+    // ── 挑戰按鈕邏輯 ──
     let challengeBtnHtml = "";
+    const savedChoice = getChallengeChoice();
+
     if (info.status === "體重過輕") {
         challengeBtnHtml = `
             <button class="btn-gain btn-full pulse-btn" onclick="handleAdvancedPlan('gain')">
                 💪 開始 30 天增肌增重挑戰
             </button>`;
     } else if (info.status === "正常範圍") {
-        challengeBtnHtml = `
-            <button class="btn-gain" onclick="handleAdvancedPlan('gain')">💪 增肌挑戰</button>
-            <button class="btn-lose" onclick="handleAdvancedPlan('lose')">🔥 維持體態挑戰</button>`;
+        // 若已選擇，只顯示已選的按鈕
+        if (savedChoice === 'gain') {
+            challengeBtnHtml = `
+                <button class="btn-gain btn-full" onclick="handleAdvancedPlan('gain')">
+                    💪 繼續我的增肌挑戰
+                </button>`;
+        } else if (savedChoice === 'lose') {
+            challengeBtnHtml = `
+                <button class="btn-lose btn-full" onclick="handleAdvancedPlan('lose')">
+                    🔥 繼續我的維持體態挑戰
+                </button>`;
+        } else {
+            // 尚未選擇，顯示兩個按鈕
+            challengeBtnHtml = `
+                <button class="btn-gain" onclick="handleAdvancedPlan('gain')">💪 增肌挑戰</button>
+                <button class="btn-lose" onclick="handleAdvancedPlan('lose')">🔥 維持體態挑戰</button>`;
+        }
     } else {
         // 過重 / 肥胖
         challengeBtnHtml = `
@@ -1124,6 +1308,7 @@ window.addEventListener('click', e => {
         const modal = document.getElementById(id);
         if (e.target === modal) modal.style.display = 'none';
     });
+    // 點擊確認視窗背景不關閉（避免誤觸）
 });
 
 window.addEventListener('load', function () {
@@ -1146,12 +1331,10 @@ window.addEventListener('load', function () {
 
 <!-- ===================== AI 懸浮對話框 ===================== -->
 
-<!-- 懸浮按鈕 -->
 <button id="chat-fab" onclick="toggleChat()" title="詢問 AI 健康顧問">
     <span id="chat-fab-icon">💬</span>
 </button>
 
-<!-- 對話視窗 -->
 <div id="chat-widget" class="chat-widget hidden">
     <div class="chat-header">
         <div class="chat-header-info">
@@ -1197,7 +1380,6 @@ window.addEventListener('load', function () {
 </div>
 
 <style>
-/* ── 懸浮按鈕 ── */
 #chat-fab {
     position: fixed;
     bottom: 28px; right: 24px;
@@ -1219,7 +1401,6 @@ window.addEventListener('load', function () {
 }
 #chat-fab:hover { transform: scale(1.1) translateY(-2px); box-shadow: none; animation: none; }
 
-/* ── 對話視窗 ── */
 .chat-widget {
     position: fixed;
     bottom: 100px; right: 24px;
@@ -1238,7 +1419,6 @@ window.addEventListener('load', function () {
     transform: translateY(16px) scale(0.97);
 }
 
-/* ── Header ── */
 .chat-header {
     background: linear-gradient(135deg, #1a1a2e, #0f3460);
     padding: 14px 16px;
@@ -1264,7 +1444,6 @@ window.addEventListener('load', function () {
 }
 .chat-close-btn:hover { background: rgba(255,255,255,0.25); transform: none; box-shadow: none; }
 
-/* ── 訊息區 ── */
 .chat-messages {
     flex: 1; overflow-y: auto; padding: 14px 14px 8px;
     display: flex; flex-direction: column; gap: 10px;
@@ -1282,7 +1461,6 @@ window.addEventListener('load', function () {
 .chat-msg.ai  .msg-bubble { background: #f0f4f8; color: #1a1a2e; border-radius: 4px 14px 14px 14px; }
 .chat-msg.user .msg-bubble { background: linear-gradient(135deg,#4a90e2,#357abd); color: white; border-radius: 14px 4px 14px 14px; }
 
-/* 打字動畫 */
 .typing-dots { display: flex; gap: 4px; align-items: center; padding: 4px 2px; }
 .typing-dots span {
     width: 7px; height: 7px; border-radius: 50%;
@@ -1292,7 +1470,6 @@ window.addEventListener('load', function () {
 .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes dotBounce { 0%,80%,100%{transform:scale(0.7);opacity:0.5} 40%{transform:scale(1);opacity:1} }
 
-/* ── 快速回覆 ── */
 .chat-quick-replies {
     display: flex; flex-wrap: wrap; gap: 6px;
     padding: 0 12px 10px; flex-shrink: 0;
@@ -1307,7 +1484,6 @@ window.addEventListener('load', function () {
 }
 .chat-quick-replies button:hover { background: #dbeafe; transform: none; box-shadow: none; }
 
-/* ── 輸入列 ── */
 .chat-input-row {
     display: flex; gap: 8px; padding: 10px 12px;
     border-top: 1px solid #f0f0f0; flex-shrink: 0;
@@ -1331,7 +1507,6 @@ window.addEventListener('load', function () {
 #chat-send-btn:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(74,144,226,0.4); }
 #chat-send-btn:disabled { opacity: 0.45; transform: none; cursor: not-allowed; }
 
-/* 手機版 */
 @media (max-width: 400px) {
     .chat-widget { width: calc(100vw - 24px); right: 12px; bottom: 90px; }
     #chat-fab { right: 16px; bottom: 20px; }
@@ -1339,17 +1514,12 @@ window.addEventListener('load', function () {
 </style>
 
 <script>
-// =================== AI 對話框 ===================
-// ⚠️ 這裡指向你的 Flask 後端 /chat 端點
-// 本機測試時是 http://localhost:8080/chat
-// 部署後改成你的 Render URL，例如 https://your-app.onrender.com/chat
 const FLASK_CHAT_URL = 'https://angie-bmi-bot.onrender.com/chat';
 
 let chatOpen = false;
-let chatHistory = [];          // 對話歷史（傳給 API 用）
-let currentBmiContext = null;  // 記住用戶的 BMI 狀態
+let chatHistory = [];
+let currentBmiContext = null;
 
-// 當 calculateBMI 執行完，把狀態存進這裡
 function updateChatBmiContext(status, bmi, idealWeight) {
     currentBmiContext = { status, bmi, idealWeight };
     const subtitle = document.getElementById('chat-subtitle');
@@ -1369,7 +1539,6 @@ function toggleChat() {
 
 function sendQuick(text) {
     document.getElementById('chat-input').value = text;
-    // 快速回覆後隱藏快捷鍵區域，讓對話更乾淨
     document.getElementById('chat-quick-replies').style.display = 'none';
     sendChat();
 }
@@ -1383,7 +1552,6 @@ async function sendChat() {
     appendMsg('user', userText);
     chatHistory.push({ role: 'user', content: userText });
 
-    // 停用送出按鈕 + 顯示打字動畫
     const sendBtn = document.getElementById('chat-send-btn');
     sendBtn.disabled = true;
     const typingId = appendTyping();
@@ -1394,7 +1562,7 @@ async function sendChat() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 messages: chatHistory,
-                bmi_context: currentBmiContext   // 把 BMI 狀況傳給後端
+                bmi_context: currentBmiContext
             })
         });
 
@@ -1406,7 +1574,6 @@ async function sendChat() {
         appendMsg('ai', reply);
         chatHistory.push({ role: 'assistant', content: reply });
 
-        // 只保留最近 10 輪對話，避免 token 爆炸
         if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
 
     } catch (err) {
@@ -1423,7 +1590,6 @@ function appendMsg(role, text) {
     const box = document.getElementById('chat-messages');
     const div = document.createElement('div');
     div.className = `chat-msg ${role}`;
-    // 把換行符轉成 <br>，讓回應排版正常
     div.innerHTML = `<div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>`;
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
