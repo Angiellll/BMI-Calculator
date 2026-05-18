@@ -1,75 +1,125 @@
-import os  # 匯入作業系統模組（讀取環境變數）
-import pandas as pd  # 匯入 pandas（讀取 CSV）
-import google.generativeai as genai  # 匯入 Gemini AI
-from flask import Flask, request, abort  # Flask API
-from linebot import LineBotApi, WebhookHandler  # LINE Bot SDK
-from linebot.exceptions import InvalidSignatureError  # LINE 驗證錯誤
-from linebot.models import MessageEvent, TextMessage, FlexSendMessage, TextSendMessage  # LINE 訊息類型
-from dotenv import load_dotenv  # 讀取 .env
+import os
+import pandas as pd
+import google.generativeai as genai
+from flask import Flask, request, abort, jsonify
+from flask_cors import CORS                          # ← 新增：允許網頁跨域呼叫
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, FlexSendMessage, TextSendMessage
+from dotenv import load_dotenv
 
-load_dotenv()  # 載入環境變數
+load_dotenv()
 
-app = Flask(__name__)  # 建立 Flask app
-
-# ==========================================
-# ⭐【新增】遊戲化資料（暫存用）
-# ==========================================
-users = {}  # 用 dictionary 存使用者狀態 {user_id: {level, exp, pet}}
+app = Flask(__name__)
+CORS(app, resources={r"/chat": {"origins": "*"}})   # ← 只開放 /chat 端點的跨域
 
 # ==========================================
 # 1. 配置金鑰
 # ==========================================
-line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'), timeout=60)  # LINE API
-handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))  # Webhook handler
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'), timeout=60)
+handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
-# 設定 Gemini AI
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))  # 設定 API key
-model = genai.GenerativeModel(model_name='models/gemini-flash-lite-latest')  # 使用模型
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel(model_name='models/gemini-flash-lite-latest')
 
-# ★ 你的設定
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3WLMM8SN9OmkMBf6y0zqMxBmq9LO7AUKToJn-UoRmYL4dStUpE6KPnzV2-ZDwD9B98sC4ymomsKH6/pub?gid=0&single=true&output=csv"
 MY_WEBSITE_URL = "https://angiellll.github.io/BMI-Calculator/"
 
-@app.route("/callback", methods=['POST'])  # LINE webhook 路徑
+
+# ==========================================
+# 2. LINE Webhook
+# ==========================================
+@app.route("/callback", methods=['POST'])
 def callback():
-    signature = request.headers['x-line-signature']  # 取得簽名
-    body = request.get_data(as_text=True)  # 取得內容
+    signature = request.headers['x-line-signature']
+    body = request.get_data(as_text=True)
     try:
-        handler.handle(body, signature)  # 驗證並處理
+        handler.handle(body, signature)
     except InvalidSignatureError:
-        abort(400)  # 驗證失敗
+        abort(400)
     return 'OK'
 
+
 # ==========================================
-# ⭐【新增】初始化使用者
+# 3. 【新增】網頁 AI 對話框端點
 # ==========================================
-def init_user(user_id):  # 初始化函式
-    if user_id not in users:  # 如果不存在
-        users[user_id] = {  # 建立資料
-            "level": 1,  # 等級
-            "exp": 0,  # 經驗值
-            "pet": "🌱 種子"  # 初始精靈
+@app.route("/chat", methods=['POST'])
+def chat():
+    """
+    接收網頁傳來的對話請求，帶入使用者 BMI 狀態後呼叫 Gemini，回傳 AI 回覆。
+
+    Request JSON:
+    {
+        "messages": [{"role": "user", "content": "..."}, ...],
+        "bmi_context": {          ← 可選，由網頁 calculateBMI() 後自動帶入
+            "status": "過重",
+            "bmi": "26.3",
+            "idealWeight": "63.8"
         }
+    }
+
+    Response JSON:
+    { "reply": "AI 回覆文字" }
+    """
+    data = request.get_json(silent=True)
+    if not data or 'messages' not in data:
+        return jsonify({"error": "缺少 messages 欄位"}), 400
+
+    messages = data.get('messages', [])
+    bmi_ctx  = data.get('bmi_context')   # 可能為 None（用戶尚未計算 BMI）
+
+    # ── 組合系統提示 ──
+    if bmi_ctx:
+        system_prompt = f"""你是一位專業、親切、鼓勵性十足的健身新手顧問。
+
+使用者目前資訊：
+- BMI：{bmi_ctx.get('bmi', '未知')}
+- 體位狀態：{bmi_ctx.get('status', '未知')}
+- 理想體重：{bmi_ctx.get('idealWeight', '未知')} kg
+
+回覆規則：
+1. 針對使用者的體位狀態給出個人化建議，不要給通用答案。
+2. 語氣溫暖、口語化，像朋友而非教科書。
+3. 每次回覆控制在 150 字以內，新手不需要太多資訊。
+4. 如果問題與健康無關，禮貌引導回健康話題。
+5. 不要加 Markdown 格式符號（**、##），純文字即可。"""
+    else:
+        system_prompt = """你是一位專業、親切、鼓勵性十足的健身新手顧問。
+
+回覆規則：
+1. 語氣溫暖、口語化，像朋友而非教科書。
+2. 每次回覆控制在 150 字以內，簡潔明瞭。
+3. 如果問題與健康無關，禮貌引導回健康話題。
+4. 不要加 Markdown 格式符號（**、##），純文字即可。
+
+提示：鼓勵使用者先輸入身高體重，這樣你就能給更個人化的建議。"""
+
+    # ── 把對話歷史轉成 Gemini 格式 ──
+    # Gemini 的 role 只有 'user' 和 'model'（不是 'assistant'）
+    try:
+        gemini_history = []
+        for msg in messages[:-1]:   # 最後一則由 send_message 傳
+            role = 'model' if msg['role'] == 'assistant' else 'user'
+            gemini_history.append({'role': role, 'parts': [msg['content']]})
+
+        last_user_msg = messages[-1]['content'] if messages else ""
+
+        # 建立含歷史的對話
+        chat_session = model.start_chat(history=gemini_history)
+        full_prompt = f"{system_prompt}\n\n用戶問題：{last_user_msg}"
+        response = chat_session.send_message(full_prompt)
+        reply_text = response.text.strip()
+
+        return jsonify({"reply": reply_text})
+
+    except Exception as e:
+        print(f"Chat API Error: {e}")
+        return jsonify({"reply": "服務稍忙，請稍後再試！"}), 500
+
 
 # ==========================================
-# ⭐【新增】加經驗 & 進化
+# 4. LINE Bot 訊息處理
 # ==========================================
-def add_exp(user_id, exp):  # 增加經驗
-    users[user_id]["exp"] += exp  # 累加 EXP
-
-    # 升級判斷
-    while users[user_id]["exp"] >= 100:  # 每100升級
-        users[user_id]["exp"] -= 100  # 扣掉
-        users[user_id]["level"] += 1  # 等級+1
-
-        # 進化系統（皮克敏風）
-        if users[user_id]["level"] == 3:
-            users[user_id]["pet"] = "🌿 嫩芽"
-        elif users[user_id]["level"] == 5:
-            users[user_id]["pet"] = "🧚 小精靈"
-        elif users[user_id]["level"] == 8:
-            users[user_id]["pet"] = "🌸 開花精靈"
-
 def get_ai_advice(category):
     """從試算表抓取官方資料並透過 Gemini 轉化成親切建議"""
     try:
@@ -95,80 +145,19 @@ def get_ai_advice(category):
         print(f"AI Error: {e}")
         return "服務稍忙，請稍後再試！"
 
-def build_pet_flex_message(user):
-    pet_name = user["pet"]
-    pet_icon = pet_name.split()[0] if pet_name else "🌱"
-
-    flex_content = {
-        "type": "bubble",
-        "header": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {"type": "text", "text": "我的小精靈", "weight": "bold", "size": "xl", "align": "center"},
-                {"type": "text", "text": pet_icon, "size": "5xl", "align": "center", "margin": "md"}
-            ]
-        },
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {"type": "text", "text": f"等級：{user['level']}", "size": "md", "weight": "bold"},
-                {"type": "text", "text": f"EXP：{user['exp']}/100", "size": "md", "margin": "sm"},
-                {"type": "text", "text": f"夥伴：{pet_name}", "size": "md", "margin": "sm"}
-            ]
-        }
-    }
-
-    return FlexSendMessage(alt_text="我的小精靈", contents=flex_content)
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    user_msg = event.message.text.strip()  # 取得使用者訊息
-    user_id = event.source.user_id  # ⭐ 取得 LINE 使用者ID
+    user_msg = event.message.text.strip()
 
-    init_user(user_id)  # ⭐ 初始化使用者
-
-    # ==========================================
-    # ⭐【新增】遊戲指令區
-    # ==========================================
-
-    # 查詢狀態
-    if user_msg == "我的精靈":
-        user = users[user_id]
-        line_bot_api.reply_message(event.reply_token, build_pet_flex_message(user))
-        return
-
-    # 運動指令（例：運動 30）
-    if user_msg.startswith("運動"):
-        try:
-            minutes = int(user_msg.split()[1])  # 取得分鐘
-            gained = minutes * 10  # 每分鐘10 EXP
-            add_exp(user_id, gained)  # 加經驗
-
-            user = users[user_id]
-            reply = f"🔥 運動 {minutes} 分鐘！\n+{gained} EXP\n目前等級：{user['level']}（{user['pet']}）"
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply))
-            return
-        except:
-            pass
-
-    # 每日簽到
-    if user_msg == "簽到":
-        add_exp(user_id, 20)  # 給20 EXP
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="✅ 簽到成功！+20 EXP"))
-        return
-
-    # ==========================================
-    # 原本功能（完全保留）
-    # ==========================================
-
+    # ── 關鍵字觸發 AI 建議 ──
     menu_keywords = ["飲食建議", "運動方案", "體位標準", "常見迷思破解", "身體活動指引"]
     if user_msg in menu_keywords:
         ai_reply = get_ai_advice(user_msg)
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=ai_reply))
         return
 
+    # ── BMI 計算 ──
     try:
         parts = user_msg.replace('　', ' ').split()
         if len(parts) < 2:
@@ -184,9 +173,6 @@ def handle_message(event):
         bmi = round(weight / (height_m ** 2), 1)
         ideal_weight = round(22 * (height_m ** 2), 1)
         weight_diff = round(weight - ideal_weight, 1)
-
-        # ⭐【新增】BMI成功 → 給 EXP
-        add_exp(user_id, 10)  # 計算一次給10 EXP
 
         if bmi < 18.5:
             status, color = "體重過輕", "#4a90e2"
@@ -249,6 +235,7 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text="💡 請輸入正確格式：身高 體重\n例如：175 70")
         )
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
