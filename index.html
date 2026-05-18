@@ -188,7 +188,6 @@
             border-radius: 14px; padding: 14px 18px;
             margin-top: 18px; position: relative;
         }
-        .avatar-display { font-size: 2.8rem; flex-shrink: 0; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
         .overview-info { flex: 1; }
         .overview-label { color: rgba(255,255,255,0.5); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
         .overview-value { color: #fff; font-weight: 700; font-size: 1rem; margin-top: 2px; }
@@ -409,10 +408,7 @@
             <div class="challenge-hero-title" id="challenge-hero-title">💪 30天增肌增重挑戰</div>
             <div class="challenge-hero-sub" id="challenge-hero-sub">建立習慣，改變體態</div>
             <div class="challenge-overview">
-                <div>
-                    <div class="avatar-display" id="ch-avatar">🌱</div>
-                    <div style="color:white;font-size:0.75rem;text-align:center;margin-top:4px;" id="pet-info">Lv.1 小健苗</div>
-                </div>
+
                 <div class="overview-info">
                     <div class="overview-label">目前階段</div>
                     <div class="overview-value" id="ch-stage">新手上路</div>
@@ -579,42 +575,6 @@ const WEIGHT_LOG_KEY = 'bmi_challenge_weights';
 let challengeType = 'gain';
 let challengeWeightChart = null;
 
-// ===== 寵物系統 =====
-function getPetState() {
-    const raw = localStorage.getItem('pet_state');
-    if (!raw) {
-        const init = { level: 1, exp: 0, form: "🌱" };
-        localStorage.setItem('pet_state', JSON.stringify(init));
-        return init;
-    }
-    return JSON.parse(raw);
-}
-
-function savePetState(pet) {
-    localStorage.setItem('pet_state', JSON.stringify(pet));
-}
-
-function gainPetExp(amount = 10) {
-    let pet = getPetState();
-    pet.exp += amount;
-    if (pet.exp >= 50) {
-        pet.level++;
-        pet.exp = 0;
-        if (pet.level === 2) pet.form = "🌿";
-        if (pet.level === 3) pet.form = "🌳";
-    }
-    savePetState(pet);
-    return pet;
-}
-
-function renderPet() {
-    const pet = getPetState();
-    const avatar = document.getElementById('ch-avatar');
-    const info = document.getElementById('pet-info');
-    if (avatar) avatar.innerText = pet.form;
-    if (info) info.innerText = `Lv.${pet.level} 小健苗`;
-}
-
 function getChallengeState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -653,7 +613,6 @@ function handleAdvancedPlan(type) {
     }
     challengeType = type;
     renderChallengeModal(state);
-    renderPet();
     document.getElementById('challengeModal').style.display = 'block';
 }
 
@@ -676,7 +635,6 @@ function renderChallengeModal(state) {
 
     document.getElementById('challenge-hero-title').innerText = plan.title;
     document.getElementById('challenge-hero-sub').innerText = plan.sub;
-    renderPet();
     document.getElementById('ch-stage').innerText = plan.stages[weekIndex];
     document.getElementById('ch-streak').innerText = streak + ' 天';
     document.getElementById('ch-day-badge').innerText = 'DAY ' + (completedCount + 1);
@@ -791,12 +749,6 @@ function completeDayChallenge() {
     const allDone = checks.every(c => c) && checks.length > 0;
     if (!allDone) return;
 
-    gainPetExp(10);
-    renderPet();
-
-    let badges = JSON.parse(localStorage.getItem('badges') || '[]');
-    badges.push("🏅");
-    localStorage.setItem('badges', JSON.stringify(badges));
 
     state.completedDays.push(today);
     saveChallengeState(state);
@@ -928,6 +880,9 @@ function calculateBMI() {
     document.getElementById('bmi-value').style.color = info.color;
     document.getElementById('bmi-status').innerText = info.status;
     document.getElementById('status-box').style.borderColor = info.color;
+
+    // 把 BMI 狀態同步到 AI 對話框
+    updateChatBmiContext(info.status, bmi, idealWeight);
 
     const goalText = weightDiff > 0
         ? `理想體重為 <strong>${idealWeight} kg</strong>，需減重 ${weightDiff} kg。`
@@ -1187,6 +1142,310 @@ window.addEventListener('load', function () {
         setTimeout(() => { if (typeof calculateBMI === "function") calculateBMI(); }, 400);
     }
 });
+</script>
+
+<!-- ===================== AI 懸浮對話框 ===================== -->
+
+<!-- 懸浮按鈕 -->
+<button id="chat-fab" onclick="toggleChat()" title="詢問 AI 健康顧問">
+    <span id="chat-fab-icon">💬</span>
+</button>
+
+<!-- 對話視窗 -->
+<div id="chat-widget" class="chat-widget hidden">
+    <div class="chat-header">
+        <div class="chat-header-info">
+            <span class="chat-status-dot"></span>
+            <div>
+                <div class="chat-title">🤖 AI 健康顧問</div>
+                <div class="chat-subtitle" id="chat-subtitle">知道你的健康狀況，隨時回答</div>
+            </div>
+        </div>
+        <button class="chat-close-btn" onclick="toggleChat()">✕</button>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg ai">
+            <div class="msg-bubble">
+                嗨！我是你的 AI 健康顧問 👋<br>
+                輸入身高體重後，我會根據你的狀況回答問題。<br><br>
+                可以問我：<br>
+                「我吃了麥當勞怎麼辦？」<br>
+                「今天不想運動有什麼替代方案？」<br>
+                「深蹲要怎麼做才正確？」
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-quick-replies" id="chat-quick-replies">
+        <button onclick="sendQuick('我今天吃了炸雞，怎麼補救？')">🍗 吃了炸雞怎辦</button>
+        <button onclick="sendQuick('今天很累不想運動，有沒有輕鬆替代方案？')">😴 不想運動</button>
+        <button onclick="sendQuick('深蹲的正確姿勢是什麼？')">🏋️ 深蹲姿勢</button>
+        <button onclick="sendQuick('我要怎麼開始健身？')">🔰 新手入門</button>
+    </div>
+
+    <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="問我任何健康問題..." maxlength="200"
+               onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendChat(); }">
+        <button id="chat-send-btn" onclick="sendChat()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<style>
+/* ── 懸浮按鈕 ── */
+#chat-fab {
+    position: fixed;
+    bottom: 28px; right: 24px;
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a90e2, #357abd);
+    color: white; border: none; cursor: pointer;
+    font-size: 1.5rem;
+    box-shadow: 0 6px 24px rgba(74,144,226,0.45);
+    z-index: 999;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 0; width: 58px;
+    animation: fabPulse 3s infinite;
+}
+@keyframes fabPulse {
+    0%,100% { box-shadow: 0 6px 24px rgba(74,144,226,0.45); }
+    50%      { box-shadow: 0 6px 32px rgba(74,144,226,0.7); }
+}
+#chat-fab:hover { transform: scale(1.1) translateY(-2px); box-shadow: none; animation: none; }
+
+/* ── 對話視窗 ── */
+.chat-widget {
+    position: fixed;
+    bottom: 100px; right: 24px;
+    width: 340px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+    z-index: 998;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    transition: opacity 0.25s, transform 0.25s;
+    max-height: 520px;
+}
+.chat-widget.hidden {
+    opacity: 0; pointer-events: none;
+    transform: translateY(16px) scale(0.97);
+}
+
+/* ── Header ── */
+.chat-header {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+}
+.chat-header-info { display: flex; align-items: center; gap: 10px; }
+.chat-status-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #2ecc71;
+    box-shadow: 0 0 0 2px rgba(46,204,113,0.3);
+    flex-shrink: 0;
+    animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.chat-title { color: white; font-weight: 700; font-size: 0.9rem; }
+.chat-subtitle { color: rgba(255,255,255,0.55); font-size: 0.72rem; margin-top: 1px; }
+.chat-close-btn {
+    background: rgba(255,255,255,0.12); border: none; color: white;
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+    font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
+    margin-top: 0; width: 28px; padding: 0; transition: background 0.2s;
+}
+.chat-close-btn:hover { background: rgba(255,255,255,0.25); transform: none; box-shadow: none; }
+
+/* ── 訊息區 ── */
+.chat-messages {
+    flex: 1; overflow-y: auto; padding: 14px 14px 8px;
+    display: flex; flex-direction: column; gap: 10px;
+    min-height: 180px;
+    scrollbar-width: thin;
+}
+.chat-msg { display: flex; }
+.chat-msg.ai  { justify-content: flex-start; }
+.chat-msg.user{ justify-content: flex-end; }
+.msg-bubble {
+    max-width: 82%; padding: 10px 13px;
+    border-radius: 14px; font-size: 0.85rem; line-height: 1.55;
+    word-break: break-word;
+}
+.chat-msg.ai  .msg-bubble { background: #f0f4f8; color: #1a1a2e; border-radius: 4px 14px 14px 14px; }
+.chat-msg.user .msg-bubble { background: linear-gradient(135deg,#4a90e2,#357abd); color: white; border-radius: 14px 4px 14px 14px; }
+
+/* 打字動畫 */
+.typing-dots { display: flex; gap: 4px; align-items: center; padding: 4px 2px; }
+.typing-dots span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #aaa; animation: dotBounce 1.2s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce { 0%,80%,100%{transform:scale(0.7);opacity:0.5} 40%{transform:scale(1);opacity:1} }
+
+/* ── 快速回覆 ── */
+.chat-quick-replies {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 0 12px 10px; flex-shrink: 0;
+}
+.chat-quick-replies button {
+    background: #eff6ff; color: #4a90e2;
+    border: 1.5px solid #bfdbfe; border-radius: 20px;
+    padding: 5px 11px; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; width: auto; margin-top: 0;
+    transition: background 0.15s; white-space: nowrap;
+    font-family: inherit;
+}
+.chat-quick-replies button:hover { background: #dbeafe; transform: none; box-shadow: none; }
+
+/* ── 輸入列 ── */
+.chat-input-row {
+    display: flex; gap: 8px; padding: 10px 12px;
+    border-top: 1px solid #f0f0f0; flex-shrink: 0;
+    background: white;
+}
+.chat-input-row input {
+    flex: 1; padding: 9px 12px; border-radius: 22px;
+    border: 2px solid #e5e7eb; font-size: 0.85rem;
+    font-family: inherit; background: #fafafa;
+    transition: border-color 0.2s;
+}
+.chat-input-row input:focus { border-color: #4a90e2; outline: none; background: white; }
+#chat-send-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg,#4a90e2,#357abd);
+    color: white; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 0; padding: 0;
+    transition: transform 0.15s, opacity 0.2s;
+}
+#chat-send-btn:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(74,144,226,0.4); }
+#chat-send-btn:disabled { opacity: 0.45; transform: none; cursor: not-allowed; }
+
+/* 手機版 */
+@media (max-width: 400px) {
+    .chat-widget { width: calc(100vw - 24px); right: 12px; bottom: 90px; }
+    #chat-fab { right: 16px; bottom: 20px; }
+}
+</style>
+
+<script>
+// =================== AI 對話框 ===================
+// ⚠️ 這裡指向你的 Flask 後端 /chat 端點
+// 本機測試時是 http://localhost:8080/chat
+// 部署後改成你的 Render URL，例如 https://your-app.onrender.com/chat
+const FLASK_CHAT_URL = 'https://angie-bmi-bot.onrender.com/chat';
+
+let chatOpen = false;
+let chatHistory = [];          // 對話歷史（傳給 API 用）
+let currentBmiContext = null;  // 記住用戶的 BMI 狀態
+
+// 當 calculateBMI 執行完，把狀態存進這裡
+function updateChatBmiContext(status, bmi, idealWeight) {
+    currentBmiContext = { status, bmi, idealWeight };
+    const subtitle = document.getElementById('chat-subtitle');
+    if (subtitle) subtitle.innerText = `BMI ${bmi}・${status}・隨時回答`;
+}
+
+function toggleChat() {
+    chatOpen = !chatOpen;
+    const widget = document.getElementById('chat-widget');
+    const icon   = document.getElementById('chat-fab-icon');
+    widget.classList.toggle('hidden', !chatOpen);
+    icon.innerText = chatOpen ? '✕' : '💬';
+    if (chatOpen) {
+        setTimeout(() => document.getElementById('chat-input').focus(), 200);
+    }
+}
+
+function sendQuick(text) {
+    document.getElementById('chat-input').value = text;
+    // 快速回覆後隱藏快捷鍵區域，讓對話更乾淨
+    document.getElementById('chat-quick-replies').style.display = 'none';
+    sendChat();
+}
+
+async function sendChat() {
+    const input = document.getElementById('chat-input');
+    const userText = input.value.trim();
+    if (!userText) return;
+
+    input.value = '';
+    appendMsg('user', userText);
+    chatHistory.push({ role: 'user', content: userText });
+
+    // 停用送出按鈕 + 顯示打字動畫
+    const sendBtn = document.getElementById('chat-send-btn');
+    sendBtn.disabled = true;
+    const typingId = appendTyping();
+
+    try {
+        const res = await fetch(FLASK_CHAT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: chatHistory,
+                bmi_context: currentBmiContext   // 把 BMI 狀況傳給後端
+            })
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const reply = data.reply || '抱歉，服務暫時無法回應，請稍後再試。';
+
+        removeTyping(typingId);
+        appendMsg('ai', reply);
+        chatHistory.push({ role: 'assistant', content: reply });
+
+        // 只保留最近 10 輪對話，避免 token 爆炸
+        if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+
+    } catch (err) {
+        removeTyping(typingId);
+        appendMsg('ai', '⚠️ 連線失敗，請確認後端服務是否啟動，或稍後再試。');
+        console.error('Chat error:', err);
+    } finally {
+        sendBtn.disabled = false;
+        input.focus();
+    }
+}
+
+function appendMsg(role, text) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${role}`;
+    // 把換行符轉成 <br>，讓回應排版正常
+    div.innerHTML = `<div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+}
+
+function appendTyping() {
+    const box = document.getElementById('chat-messages');
+    const id = 'typing-' + Date.now();
+    const div = document.createElement('div');
+    div.className = 'chat-msg ai';
+    div.id = id;
+    div.innerHTML = `<div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return id;
+}
+
+function removeTyping(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
 </script>
 </body>
 </html>
